@@ -296,8 +296,24 @@ const CFG={kingdoms:4,startPop:14,perKingCap:110,totalCap:1100,
   fields:true, climate:true, droughtGapYears:[22,55], droughtYears:[2,6], droughtFood:[0.03,0.10], foodScale:0.24, foodCap:1300, femSoldier:0.1,   // femSoldier: ön sanayi iş bölümü normu (kapatmak için 1)
   // rejim yaşı: hanedanlar 3-4 kuşakta gevşer (Ibn Haldun / Turchin: asabiya çürümesi)
   regimeDecay:0.20, regimeYears:70};
-// isyanla doğacak yeni krallıklar için renk + isim havuzu
-const PALETTE=['#b98cff','#ff8a5c','#5cd6c0','#d64f6a','#9ec94f','#4f8cff','#f0a6d0','#c0a15c','#6ad0ff','#ff6ba3'];
+// yüksek kontrastlı krallık renkleri: algısal olarak ayrık tonlar (en fazla 10 krallık)
+const KINGDOM_COLORS=['#e6b34a','#ff7a45','#e04f5f','#e86aa6','#b07bff','#5b7cff','#35c9e0','#35c9a0','#7ccf5a','#c9d94a','#b07a4a','#9fb3c8','#f2e6b8','#d96ad9'];
+function rgbLab(r,g,b){const f=v=>{v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4)};r=f(r);g=f(g);b=f(b);
+  let x=(r*0.4124+g*0.3576+b*0.1805)/0.95047,y=r*0.2126+g*0.7152+b*0.0722,z=(r*0.0193+g*0.1192+b*0.9505)/1.08883;
+  const t=v=>v>0.008856?Math.cbrt(v):7.787*v+16/116;x=t(x);y=t(y);z=t(z);
+  return [116*y-16,500*(x-y),200*(y-z)];}
+function colorDist(a,b){const A=rgbLab(...hexRGB(a)),B=rgbLab(...hexRGB(b));return Math.hypot(A[0]-B[0],A[1]-B[1],A[2]-B[2]);}
+function minColorDist(c,used){let d=Infinity;for(const u of used){const v=colorDist(c,u);if(v<d)d=v;}return d;}
+function hslHex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1)),x=v=>Math.round(v*255).toString(16).padStart(2,'0');return '#'+x(f(0))+x(f(8))+x(f(4));}
+function goldenColor(seed,used){const base=Math.abs(Number(seed)||0),taken=new Set([...used].map(c=>String(c).toLowerCase()));
+  for(let i=0;i<36;i++){const h=(base*137.508+i*47.5)%360,c=hslHex(h,62+(i%3)*8,52+(i%2)*10);if(!taken.has(c)&&minColorDist(c,used)>18)return c;}
+  return hslHex((base*137.508)%360,70,58);}
+function pickKingdomColor(used,seed){const taken=new Set([...used].map(c=>String(c).toLowerCase())),free=KINGDOM_COLORS.filter(c=>!taken.has(c.toLowerCase())),s=Math.abs(Number(seed)||0);
+  if(!free.length)return goldenColor(s,used);
+  if(!taken.size)return free[s%free.length];
+  let best=free[0],bestD=-1;
+  for(let i=0;i<free.length;i++){const c=free[i],d=minColorDist(c,used);if(d>bestD+1e-6||(Math.abs(d-bestD)<=1e-6&&((s+i)&1)===0)){best=c;bestD=d;}}
+  return best;}
 const ROLES=['FARMER','SOLDIER','DOCTOR','MERCHANT','SPY','ARTISAN','PRIEST'];
 const ROLE_TR={FARMER:'çiftçi',SOLDIER:'asker',DOCTOR:'hekim',MERCHANT:'tüccar',SPY:'casus',ARTISAN:'zanaatkâr',PRIEST:'rahip',CHILD:'çocuk'};
 
@@ -334,7 +350,6 @@ const CULTS_N=[
   f:{s:['Adal','Berth','Ger','Hild','Lud','Ott','Wolfg','Gisel','Irm','Math','Rosw','Ute'],e:['a','trud','linde','burga','hild','munda','gund','heid','ilde']},
   sur:{s:['Brun','Falk','Grau','Hart','Kühn','Lang','Reich','Stein','Weiss','Ritter','Schwarz','Adler'],e:['er','mann','berg','hardt','feld','bach','wald','hof']},
   city:{s:['Alt','Neu','Burg','Stein','Wald','Bach','Berg','Hoch','Lind','Eich','Rhein','Mark'],e:['burg','dorf','heim','stadt','furt','hausen','bruck','au','tal']}}];
-const KINGS=[{name:'',color:'#e6a94a'},{name:'',color:'#4fc9e0'},{name:'',color:'#f06a9a'},{name:'',color:'#7ee081'},{name:'',color:'#b98cff'},{name:'',color:'#ff8a5c'}];
 let usedCityNames=new Set(),usedSurn=new Set(),usedFull=new Set(),usedKingNames=new Set();
 const pick=a=>a[(rng()*a.length)|0];
 function cap1(s){return s.charAt(0).toLocaleUpperCase('tr')+s.slice(1);}
@@ -625,8 +640,9 @@ function reset(){
   initTerritory();genTerrain();
   const sites=pickSites(CFG.kingdoms);usedCityNames=new Set();usedSurn=new Set();usedFull=new Set();usedKingNames=new Set();
   const order=CULTS_N.map((_,q)=>q);for(let q=order.length-1;q>0;q--){const r=(rng()*(q+1))|0;[order[q],order[r]]=[order[r],order[q]];}              // her krallık ayrı isim kültüründen
-  const cols=KINGS.map(k=>k.color).concat(PALETTE);for(let q=cols.length-1;q>0;q--){const r=(rng()*(q+1))|0;[cols[q],cols[r]]=[cols[r],cols[q]];}
-  const picks=[];for(let q=0;q<CFG.kingdoms;q++){const nc=order[q%order.length];picks.push({nc,name:kingName(nc),color:cols[q]});}
+  // eski 16'lık renk karıştırmasının RNG tüketimini koru: aynı tohumun tarihi kaymasın
+  const colorOrder=Array.from({length:16},(_,q)=>q);for(let q=colorOrder.length-1;q>0;q--){const r=(rng()*(q+1))|0;[colorOrder[q],colorOrder[r]]=[colorOrder[r],colorOrder[q]];}
+  const picks=[],usedCols=new Set();for(let q=0;q<CFG.kingdoms;q++){const nc=order[q%order.length],color=pickKingdomColor(usedCols,colorOrder[q]*31+q);usedCols.add(color);picks.push({nc,name:kingName(nc),color});}
   const tribes=[];for(let i=0;i<CFG.kingdoms;i++)tribes.push(makeKingdom(i,sites[i],picks[i]));
   const agents=[];
   for(const t of tribes)foundFamilies(t,capital(t),agents);
@@ -788,9 +804,8 @@ function updateSociety(){
     trySecede(t);
   }
 }
-function freshIdent(nc){const cols=new Set(sim.tribes.filter(t=>!t._dead).map(t=>t.color));let color=null;
-  for(let q=0;q<PALETTE.length&&!color;q++){const c=PALETTE[(nextKingId+q)%PALETTE.length];if(!cols.has(c))color=c;}
-  return {name:kingName(nc),color:color||PALETTE[nextKingId%PALETTE.length]};}
+function freshIdent(nc){const used=new Set(sim.tribes.filter(t=>!t._dead).map(t=>t.color));
+  return {name:kingName(nc),color:pickKingdomColor(used,nextKingId)};}
 function trySecede(t){
   if(t._dead)return;
   const fragile=sim.tribes.filter(o=>!o._dead).length<=2?0.6:1;   // dünya birleşmişse bölünme eşiği düşer (Turchin: birleşmeyi bölünme izler)
@@ -1394,10 +1409,11 @@ function buildOverlay(){const OW=Math.ceil(W/OVR),OH=Math.ceil(H/OVR);
         if(val>bv){bv=val;best=k;}}
       own[j*OW+i]=best;}}
   const cols=sim.tribes.map(t=>mapMode==='huzur'?lerpC([100,185,100],[225,60,48],clamp((t.unrest||0)/0.2)):hexRGB(t.color));
-  const fillA=mapMode==='huzur'?95:mapMode==='iliski'?26:46;
+  const fillA=mapMode==='huzur'?100:mapMode==='iliski'?30:52;   // dolgu biraz daha az şeffaf
   for(let j=0;j<OH;j++)for(let i=0;i<OW;i++){const o=own[j*OW+i],p=(j*OW+i)*4;if(o<0)continue;
     const edge=(i>0&&own[j*OW+i-1]!==o)||(i<OW-1&&own[j*OW+i+1]!==o)||(j>0&&own[(j-1)*OW+i]!==o)||(j<OH-1&&own[(j+1)*OW+i]!==o),c=cols[o];
-    d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=edge?200:fillA;}
+    if(edge){d[p]=(c[0]*0.38)|0;d[p+1]=(c[1]*0.38)|0;d[p+2]=(c[2]*0.38)|0;d[p+3]=235;}
+    else{d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=fillA;}}
   g.putImageData(img,0,0);ovTick=sim._terrTick;}
 function pixelScale(){const cw=typeof cv.clientWidth==='number'?cv.clientWidth:0;if(!(cw>0))return 1;return Math.min(2,Math.max(1,Math.round(cw*(window.devicePixelRatio||1)/W)));}   // geniş/yüksek yoğunluklu ekranda bulanıklığı önle
 function L10N(s){return window.I18N?window.I18N.t(s):s;}
