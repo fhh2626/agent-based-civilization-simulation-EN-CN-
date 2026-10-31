@@ -220,6 +220,29 @@ using any modern web browser.
 
 No installation or external dependencies are required.
 
+### 🌐 UI languages
+
+The simulation UI runs in **English (default), 中文, or Türkçe**. Use the 🌐 selector in the header; the preference is stored in `localStorage`. You can also link directly with a query parameter:
+
+```
+index.html?lang=en
+index.html?lang=zh
+index.html?lang=tr
+```
+
+Simulation source strings remain Turkish internally so that event typing and seeded histories stay deterministic; the runtime i18n layer translates them at display time.
+
+### 🧪 Development checks
+
+Node 22+ is only needed for the checks, not for running the simulation.
+
+```bash
+npm test          # static catalog / duplicate-key / syntax checks
+npm run test:smoke # headless Edge CDP smoke test (set EDGE_PATH if needed)
+```
+
+The smoke test uses a temporary browser profile and covers language switching, plural forms, live history/tour updates, keyboard navigation, Escape handling, scroll preservation, and `?lang=` persistence. CI runs both checks on every push and pull request.
+
 ---
 
 # 📄 License

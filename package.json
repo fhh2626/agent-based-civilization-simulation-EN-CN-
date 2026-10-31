@@ -1,0 +1,14 @@
+{
+  "name": "kingdoms-simulation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Single-file agent-based civilization simulation with runtime EN/ZH/TR localisation",
+  "scripts": {
+    "test": "node tools/i18n-check.mjs",
+    "test:i18n": "node tools/i18n-check.mjs",
+    "test:smoke": "node tools/i18n-smoke.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Krallıklar Simülasyonu</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<title>Kingdoms Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#140e0a;--bg2:#1b130d;--panel:#241a12;--panel-2:#2f2218;--line:#5b4630;--gold:#d9a441;--gold-dim:#8f6d2c;
@@ -129,6 +129,7 @@
   .toast{pointer-events:auto;cursor:pointer;display:flex;gap:8px;align-items:flex-start;background:rgba(24,16,10,.94);border:1px solid var(--gold-dim);border-left:3px solid var(--gold);border-radius:6px;padding:7px 11px;font:600 13.5px/1.35 var(--serif);color:var(--ink);box-shadow:0 4px 14px rgba(0,0,0,.6);animation:tin .25s ease-out}
   .toast.war{border-left-color:#e0584a}.toast.pol{border-left-color:#d9a441}.toast.nat{border-left-color:#6fb7d8}.toast.watch{border-left-color:#8fe08a;background:rgba(28,40,20,.95)}
   .toast .tk{color:var(--gold);font-size:14px}.toast.out{opacity:0;transform:translateX(20px);transition:all .45s}
+  .toast .tx{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;max-height:4.1em;word-break:break-word}
   @keyframes tin{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
   .reduce-motion .toast{animation:none}
   .ytab{width:100%;border-collapse:collapse;font:13px var(--serif)}.ytab th{font:700 10.5px var(--display);letter-spacing:.06em;color:var(--gold-dim);text-align:right;padding:2px 4px;border-bottom:1px solid var(--line)}.ytab th:first-child,.ytab td:first-child{text-align:left}.ytab td{text-align:right;padding:3px 4px;border-bottom:1px solid #33261a;color:var(--ink)}
@@ -160,6 +161,32 @@
   .rk-l{color:#9bbf5a}.rk-m{color:#d9a441}.rk-h{color:#e0584a}
   .advh3{font:700 11.5px var(--display);letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin:14px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px}.advlog{padding:5px 0;border-bottom:1px solid #33261a;font-size:14px}
   @media(max-width:1100px){.main{grid-template-columns:1fr}.side{position:static;max-height:none}.mapframe,.dock{min-width:0;width:100%}.top{flex-wrap:wrap}}
+
+/* I18N-CSS-START */
+.lang{position:relative;flex:none}
+.top{gap:8px;padding:9px 12px}
+.top .brand{min-width:0}
+.top .brand h1{font-size:17px}
+.top .grp{gap:4px}
+.top .grp button{padding:6px 9px}
+.top .spd button{padding:6px 7px;min-width:32px}
+.top .time .chip{padding:4px 8px}
+#langBtn{display:inline-flex;align-items:center;gap:7px;padding:6px 8px;font:600 12.5px var(--display);letter-spacing:.05em}
+@media(max-width:1360px){.top{flex-wrap:wrap}}
+#langSwitch{margin-left:2px}
+.side .tabs button{font-size:11px;letter-spacing:.04em;padding:10px 2px}
+#langBtn .globe{font-size:14px;line-height:1}
+#langBtn .caret{font-size:9px;opacity:.75;margin-left:1px}
+#langMenu{display:none;position:absolute;right:0;top:calc(100% + 7px);min-width:142px;padding:5px;background:linear-gradient(#2d2116,#1d140d);border:1px solid var(--gold-dim);border-radius:8px;box-shadow:0 10px 30px #000;z-index:90}
+#langSwitch.open #langMenu{display:block}
+#langMenu button{display:block;width:100%;text-align:left;border:none;border-radius:5px;background:transparent;box-shadow:none;padding:7px 10px;font-size:13px;letter-spacing:.03em}
+#langMenu button:hover{background:#3b2a1b;border:none}
+#langBtn:focus-visible,#langMenu button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#langMenu button.on{background:#3b2a1b;color:var(--gold);box-shadow:inset 2px 0 0 var(--gold)}
+body.lang-zh{--serif:"Noto Serif SC","Songti SC","SimSun",Georgia,serif;--display:"Noto Serif SC","Songti SC","SimSun",Georgia,serif}
+body.lang-zh button,body.lang-zh .lgsub,body.lang-zh .psub{letter-spacing:0}
+/* I18N-CSS-END */
+
 </style>
 </head>
 <body>
@@ -171,6 +198,16 @@
   <div class="grp"><button id="dirBtn" title="Yönetmen modu: kamera ilginç anlara gider (D)">🎬 Yönetmen</button></div>
   <div class="grp"><button id="techBtn" title="Bilim ağacı">⚙ Bilim</button><button id="cultBtn" title="Kültür ağacı">◈ Kültür</button><button id="histBtn" title="Krallıkların tarihi">📜 Tarih</button><button id="chronBtn" title="Tüm olaylar" style="display:none">📖</button></div>
   <div class="grp"><input id="seedIn" title="Seed: aynı seed = aynı tarih" spellcheck="false"><button id="seedNewBtn" title="Yeni rastgele seed ile başlat">🎲</button><button id="resetBtn" title="Aynı seed ile baştan başlat">↻</button></div>
+<!-- I18N-SWITCH -->
+  <div id="langSwitch" class="lang">
+    <button id="langBtn" type="button" title="Language" aria-haspopup="true" aria-expanded="false"><span class="globe">🌐</span><span id="langLabel">English</span><span class="caret">▾</span></button>
+    <div id="langMenu" role="menu" aria-orientation="vertical">
+      <button type="button" role="menuitem" data-lang="en">English</button>
+      <button type="button" role="menuitem" data-lang="zh">中文</button>
+      <button type="button" role="menuitem" data-lang="tr">Türkçe</button>
+    </div>
+  </div>
+<!-- /I18N-SWITCH -->
 </header>
 <div class="main">
   <div class="stage">
@@ -199,8 +236,8 @@
           <label class="chk"><input type="checkbox" id="optHC"> Yüksek kontrast</label><label class="chk"><input type="checkbox" id="optRM"> Hareketi azalt</label><label class="chk"><input type="checkbox" id="optNT"> Olay bildirimlerini kapat</label>
           <div class="ctrl"><label>Başlangıçta önceden oynat <b></b></label><select id="optBoot" style="width:100%;background:#150e08;color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px;font:14px var(--serif)"><option value="0">hiç (sıfırdan başla)</option><option value="15">15 yıl</option><option value="30">30 yıl (önerilen)</option><option value="50">50 yıl</option></select></div>
           <div style="margin-top:8px"><button id="tourBtn" style="padding:5px 10px;font-size:12px">❔ Turu yeniden göster</button></div></div>
-        <div class="card"><h2>Kısayollar</h2><div class="lgsub" style="line-height:1.9"><b>Boşluk</b> duraklat · <b>+ / −</b> hız · <b>F</b> kamera takibi · <b>Esc</b> pencereyi kapat / seçimi bırak · <b>?</b> bu sayfa · <b>Shift+tık</b> haritaya yiyecek yağdır · fare tekerleği yakınlaştır</div></div>
-        <div class="card"><details class="how" open><summary>NASIL İZLENİR?</summary><p>Haritadaki her figür <b>kendi kişiliği ve değerleri</b> olan bir birey: sever, evlenir, çocuk yetiştirir, yas tutar, intikam peşinde koşar. Bir figüre tıkla; kişiliğini, ailesini, dostlarını, hasımlarını, anılarını ve hedefini gör, isimlere tıklayarak aile ağında gez. <b>Takip</b> ile kamera onu izler, fare tekerleği yakınlaştırır. Hükümdarın kişiliği krallığın savaş, barış ve ihanet kararlarını belirler. <b>Seed</b> kutusu aynı tarihi yeniden oynatır. Kısayol: <b>Boşluk</b> duraklatır.</p></details></div></div>
+        <div class="card"><h2>Kısayollar</h2><div class="lgsub" data-i18n-html="shortcuts" style="line-height:1.9"><b>Boşluk</b> duraklat · <b>+ / −</b> hız · <b>F</b> kamera takibi · <b>Esc</b> pencereyi kapat / seçimi bırak · <b>?</b> bu sayfa · <b>Shift+tık</b> haritaya yiyecek yağdır · fare tekerleği yakınlaştır</div></div>
+        <div class="card"><details class="how" open><summary>NASIL İZLENİR?</summary><p data-i18n-html="how">Haritadaki her figür <b>kendi kişiliği ve değerleri</b> olan bir birey: sever, evlenir, çocuk yetiştirir, yas tutar, intikam peşinde koşar. Bir figüre tıkla; kişiliğini, ailesini, dostlarını, hasımlarını, anılarını ve hedefini gör, isimlere tıklayarak aile ağında gez. <b>Takip</b> ile kamera onu izler, fare tekerleği yakınlaştırır. Hükümdarın kişiliği krallığın savaş, barış ve ihanet kararlarını belirler. <b>Seed</b> kutusu aynı tarihi yeniden oynatır. Kısayol: <b>Boşluk</b> duraklatır.</p></details></div></div>
     </div>
   </aside>
 </div>
@@ -1363,6 +1400,7 @@ function buildOverlay(){const OW=Math.ceil(W/OVR),OH=Math.ceil(H/OVR);
     d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=edge?200:fillA;}
   g.putImageData(img,0,0);ovTick=sim._terrTick;}
 function pixelScale(){const cw=typeof cv.clientWidth==='number'?cv.clientWidth:0;if(!(cw>0))return 1;return Math.min(2,Math.max(1,Math.round(cw*(window.devicePixelRatio||1)/W)));}   // geniş/yüksek yoğunluklu ekranda bulanıklığı önle
+function L10N(s){return window.I18N?window.I18N.t(s):s;}
 function render(){
   animT++;if(typeof directorFrame==='function')directorFrame();
   {const S=pixelScale();if(cv.width!==W*S){cv.width=W*S;cv.height=H*S;}ctx.setTransform(S,0,0,S,0,0);ctx.imageSmoothingEnabled=true;}
@@ -1407,7 +1445,7 @@ function render(){
       const war=(A.war&&A.war.target===j)||(B.war&&B.war.target===i),tr=sim.tr[i][j],rel=sim.rel[i][j];if(!war&&tr==='none'&&Math.abs(rel)<35)continue;
       ctx.strokeStyle=war?'#ff5a4a':tr==='ally'?'#8fe08a':tr==='trade'?'#f4cf6a':rel<0?'#b0605a':'#79a87a';ctx.lineWidth=(war?3:tr==='ally'?2.6:1.6)/z+0.4;ctx.setLineDash(war?[6/z,4/z]:[]);
       ctx.beginPath();ctx.moveTo(capital(A).x,capital(A).y);ctx.lineTo(capital(B).x,capital(B).y);ctx.stroke();ctx.setLineDash([]);
-      lbl(war?'savaş':tr==='ally'?'ittifak':tr==='trade'?'ticaret':rel<0?'gerginlik':'dostluk',(capital(A).x+capital(B).x)/2,(capital(A).y+capital(B).y)/2,11,ctx.strokeStyle,'600 PX '+TF,0.95);}}
+      lbl(L10N(war?'savaş':tr==='ally'?'ittifak':tr==='trade'?'ticaret':rel<0?'gerginlik':'dostluk'),(capital(A).x+capital(B).x)/2,(capital(A).y+capital(B).y)/2,11,ctx.strokeStyle,'600 PX '+TF,0.95);}}
     else for(let i=0;i<sim.tribes.length;i++)for(let j=i+1;j<sim.tribes.length;j++){const A=sim.tribes[i],B=sim.tribes[j];if(A._dead||B._dead)continue;if((A.war&&A.war.target===j)||(B.war&&B.war.target===i)){
       ctx.strokeStyle='rgba(255,90,74,.7)';ctx.lineWidth=1.6/z+0.3;ctx.setLineDash([5/z,4/z]);ctx.beginPath();ctx.moveTo(capital(A).x,capital(A).y);ctx.lineTo(capital(B).x,capital(B).y);ctx.stroke();ctx.setLineDash([]);}}
     const ka=z<2.2?0.95:clamp(1-(z-2.2)/1.0)*0.95;
@@ -1415,7 +1453,7 @@ function render(){
       try{ctx.letterSpacing=(2/z).toFixed(1)+'px';}catch(e){}
       lbl((sim.adv&&sim.adv.tid===t.id?'🎩 ':'')+t.name.toUpperCase(),x,y,16,t.color,'700 PX '+SF,ka);
       try{ctx.letterSpacing='0px';}catch(e){}
-      {let sub=`${t.pop} kişi`+(t.war?' · savaşta':'');if(mapMode==='yiyecek'){const f=t.cities.reduce((q,c)=>q+c.food,0)/(t.cities.length*CFG.granaryCap);sub=`ambar %${(f*100)|0}`;}else if(mapMode==='huzur')sub=`huzursuzluk %${((t.unrest||0)*100)|0}`;
+      {let sub=(window.I18N?I18N.translate(t.pop+' kişi'):t.pop+' kişi')+(t.war?' · '+L10N('savaşta'):'');if(mapMode==='yiyecek'){const f=t.cities.reduce((q,c)=>q+c.food,0)/(t.cities.length*CFG.granaryCap);sub=`${L10N('ambar')} %${(f*100)|0}`;}else if(mapMode==='huzur')sub=`${L10N('huzursuzluk')} %${((t.unrest||0)*100)|0}`;
       lbl(sub,x,y+13/z,10.5,t.war?'#ff9b8a':'#e8dcc0','italic 600 PX '+TF,ka*0.85);}}
     if(z>=1.35){const ca=clamp((z-1.35)/0.5);
       for(const t of sim.tribes){if(t._dead)continue;t.cities.forEach((b,idx)=>{const R=(idx===0?15:11);
@@ -1431,7 +1469,7 @@ function render(){
     let f=0,e=0;for(const [id,v] of sel0.rel){if(isKinId(sel0,id))continue;if(v>35&&f<3){f++;link(sim.byId.get(id),'#7ee081aa');}else if(v<-35&&e<2){e++;link(sim.byId.get(id),'#ff6b6baa',true);}}}
   ctx.restore();
   {const se=seasonIdx(sim.tick),tint=['rgba(120,200,120,0.035)','rgba(255,200,90,0.05)','rgba(230,140,60,0.05)','rgba(150,180,255,0.09)'][se];ctx.fillStyle=tint;ctx.fillRect(0,0,W,H);}
-  if(view.z>1.001){ctx.fillStyle='rgba(255,255,255,.55)';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText(view.z.toFixed(1)+'×'+(view.follow?' · takip':''),8,H-8);}
+  if(view.z>1.001){ctx.fillStyle='rgba(255,255,255,.55)';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText(view.z.toFixed(1)+'×'+(view.follow?' · '+L10N('takip'):''),8,H-8);}
   drawMini();
 }
 function drawMini(){const mc=document.getElementById('mini');if(!mc||!mc.getContext)return;const show=view.z>1.02;mc.style.display=show?'block':'none';if(!show)return;
@@ -1483,7 +1521,7 @@ function renderMetrics(){const el=document.getElementById('metrics');if(!el||!si
 function renderPyramid(){const el=document.getElementById('pyramid');if(!el||!sim)return;
   const M=new Array(8).fill(0),F=new Array(8).fill(0);for(const a of sim.agents){const b=Math.min(7,Math.floor(ageYears(a)/10));(a.sex==='F'?F:M)[b]++;}
   const mx=Math.max(1,...M,...F);
-  let h=`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${sim.agents.length} kişi · geçen yıl <b style="color:#7ee081">+${sim.vit.lb}</b> doğum, <b style="color:#ff9b5b">−${sim.vit.ld}</b> ölüm · ${SEASONS[seasonIdx(sim.tick)]}</div><div style="display:grid;grid-template-columns:1fr 36px 1fr;gap:3px 4px;align-items:center;font-size:11.5px;color:var(--muted)">`;
+  let h=`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${sim.agents.length} kişi · geçen yıl <b style="color:#7ee081">+${sim.vit.lb} doğum,</b> <b style="color:#ff9b5b">−${sim.vit.ld} ölüm</b> · ${SEASONS[seasonIdx(sim.tick)]}</div><div style="display:grid;grid-template-columns:1fr 36px 1fr;gap:3px 4px;align-items:center;font-size:11.5px;color:var(--muted)">`;
   for(let b=7;b>=0;b--){h+=`<div style="display:flex;justify-content:flex-end"><div style="height:7px;width:${M[b]/mx*100}%;background:#7aa2f7;border-radius:2px 0 0 2px"></div></div><div style="text-align:center;font-family:var(--mono)">${b*10}${b===7?'+':''}</div><div><div style="height:7px;width:${F[b]/mx*100}%;background:#f0a6d0;border-radius:0 2px 2px 0"></div></div>`;}
   el.innerHTML=h+'</div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px"><span>erkek</span><span>yaş</span><span>kadın</span></div>';}
 function updateStats(){if(typeof renderGods==='function')renderGods();renderPyramid();renderMetrics();renderCityCard();renderWatch();const deadIds=sim.tribes.filter(t=>t._dead).map(t=>t.id),hide=new Set(deadIds.slice(0,Math.max(0,deadIds.length-3)));
@@ -1493,7 +1531,8 @@ function updateStats(){if(typeof renderGods==='function')renderGods();renderPyra
     <span class="kname">${t.name}</span>
     <div class="krow">${t.ruler!=null&&sim.byId.get(t.ruler)?`👑 <a href="#" onclick="selectLegend(${t.ruler});return false" style="color:#e5c07b">${sim.byId.get(t.ruler).name}</a> (${t.dynasty}) · `:''}şehir ${t.cities.length} · toprak ${t.land} · <b>${ERA5[t.era-1]}</b> (${Object.keys(t.techs).length} buluş)${t.cultId&&t.cultId!=='—'?` · <span style="color:#c9a3e5">◈ ${t.cultId}</span>`:''} · meşruiyet ${(t.legit*100)|0}%${t.unrest>0.15?` · <span style="color:#ff6b6b">huzursuzluk ${(t.unrest*100)|0}%</span>`:''}</div>
     <div class="roles"><span>●${c.FARMER||0}</span><span>▲${c.SOLDIER||0}</span><span>✚${c.DOCTOR||0}</span><span>◆${c.MERCHANT||0}</span><span>✦${c.SPY||0}</span><span>⚒${c.ARTISAN||0}</span><span>☩${c.PRIEST||0}</span><span style="opacity:.6">çocuk ${c.CHILD||0}</span></div>
-    <div class="status">${kStatus(t)}${kBadges(t)}</div></td><td style="text-align:right;font-family:var(--mono)">${t.pop}</td></tr>`;}).join('');renderLegends();}
+    <div class="status">${kStatus(t)}${kBadges(t)}</div></td><td style="text-align:right;font-family:var(--mono)">${t.pop}</td></tr>`;}).join('');renderLegends(null,true);
+  try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)for(const id of ['stats','pyramid','metrics','cityCard','watchBar','godBox']){const el=document.getElementById(id);if(el)I18N.localizeSubtree(el);}}catch(_){ }}
 const STAGE_TR={child:'çocuk',adult:'yetişkin',elder:'yaşlı'};
 function moodLabel(a){
   if(a.rebel)return '⚑ öfkeli, isyanda';
@@ -1543,7 +1582,7 @@ function topTraits(a){const all=[...T5.map(k=>[a.pers[k]-0.5,a.pers[k]>=0.5?P_HI
   return dedupe(all.sort((x,y)=>Math.abs(y[0])-Math.abs(x[0])).map(x=>x[1])).slice(0,3);}
 function renderInspect(){const el=document.getElementById('inspect');if(selectedId!=null&&selCity){selCity=null;const cc=document.getElementById('cityCard');if(cc)cc.style.display='none';}
   const a=sim.agents.find(x=>x.id===selectedId)||(sim.legends||[]).find(x=>x.id===selectedId)||(selectedId!=null&&sim.arch&&sim.arch.get(selectedId)?null:null);
-  if(!a){el.innerHTML='<div class="empty">Haritada bir figüre tıkla, <b>Kişiler</b> sekmesinden birini seç ya da <button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 ilginç bir kişi</button> göster.</div>';return;}
+  if(!a){el.innerHTML='<div class="empty" data-i18n-html="inspectEmpty">Haritada bir figüre tıkla, <b>Kişiler</b> sekmesinden birini seç ya da <button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 ilginç bir kişi</button> göster.</div>';return;}
   const t=sim.tribes[a.tribe],dead=!!a.diedAt,yr=Math.round(dead?(a.diedAt-a.born)/CFG.yearLen:ageYears(a)),stage=dead?'—':(a.role==='CHILD'?'çocuk':STAGE_TR[lifeStage(a)]);
   const actTxt=a.rebel?`<span style="color:#ff8a7a">⚑ isyanda</span> · ${ACT_TR[a.act]||''}`:(ACT_TR[a.act]||'');const watched=watchIds.includes(a.id);
   const opts=!dead&&a._opts&&a._optsT>=sim.tick-4?a._opts.map(([k,v])=>`<div class="opt"><span>${ACT_TR[k]||k}</span><div class="nbb"><i style="width:${Math.min(100,v*100)|0}%"></i></div><b>${v.toFixed(2)}</b></div>`).join(''):'';
@@ -1568,11 +1607,12 @@ let watchIds=[];
 function toggleWatch(id){const i=watchIds.indexOf(id);if(i>=0)watchIds.splice(i,1);else{if(watchIds.length>=8)watchIds.shift();watchIds.push(id);}renderWatch();renderInspect();}
 function renderWatch(){const el=document.getElementById('watchBar');if(!el||!sim)return;
   for(const id of watchIds){const a=sim.byId&&sim.byId.get(id);if(!a)continue;const n=(a.events||[]).length;if(a._wLen==null)a._wLen=n;else if(n>a._wLen){for(const e of a.events.slice(a._wLen))toast(`${a.name}: ${e.e}`,'watch',{id});a._wLen=n;}}
-  if(!watchIds.length){el.innerHTML='<span class="empty" style="font-size:13px">İzleme listesi boş: bir kişinin kartında ☆ ile ekle (en çok 8); başına olay gelince bildirim çıkar.</span>';return;}
+  if(!watchIds.length){el.innerHTML='<span class="empty" style="font-size:13px">İzleme listesi boş: bir kişinin kartında ☆ ile ekle (en çok 8); başına olay gelince bildirim çıkar.</span>';if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);return;}
   el.innerHTML=watchIds.map(id=>{const P=getPerson(id);if(!P)return '';const a=P.a,live=P.live,mood=live?clamp(a.content??0.6):0;
     const col=live?`hsl(${Math.round(mood*120)},60%,50%)`:'#6a6a6a',st=live?(ACT_TR[a.act]||''):'† '+(a.cause||'');
     return `<div class="wchip ${selectedId===id?'on':''}" style="border-color:${col}" onclick="${live?`followId(${id})`:`openLegends('kisi',${id})`}" title="${esc(a.name+' '+a.surname)} · ${esc(st)}"><canvas width="22" height="30" data-w="${id}"></canvas><span class="wn">${esc(a.name)}</span><span class="wx" onclick="event.stopPropagation();toggleWatch(${id})">×</span></div>`;}).join('');
-  el.querySelectorAll('canvas[data-w]').forEach(cn=>{const P=getPerson(+cn.dataset.w);if(!P)return;const a=P.a,g=cn.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role,sex:a.sex,born:sim.tick-(a.died-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c)g.drawImage(sp.c,0,0,22,30);});}
+  el.querySelectorAll('canvas[data-w]').forEach(cn=>{const P=getPerson(+cn.dataset.w);if(!P)return;const a=P.a,g=cn.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role,sex:a.sex,born:sim.tick-(a.died-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c)g.drawImage(sp.c,0,0,22,30);});
+  if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);}
 function interestScore(a){let s=0;if(isRulerOf(a))s+=6;s+=(a.kills||0)*1.5;if(a.rebel)s+=4;if(a.goal&&a.goal.type==='REVENGE')s+=5;if(a.pregUntil>0)s+=2;if(a.spouse==null&&lifeStage(a)==='adult')s+=0.5;s+=Math.min(4,(a.children||[]).length*0.6);s+=(a.mem||[]).length*0.15;if(a.act==='FIGHT'||a.act==='INVADE')s+=2;if(lifeStage(a)==='elder')s+=1;return s;}
 function randomInteresting(){const L=sim.agents.filter(a=>a.energy>0&&lifeStage(a)!=='child');if(!L.length)return;let tot=0;const w=L.map(a=>{const x=0.5+interestScore(a);tot+=x;return x;});let r=rngUI()*tot,k=0;while(k<L.length-1&&(r-=w[k])>0)k++;followId(L[k].id);}
 /* Kişiler sekmesi */
@@ -1688,7 +1728,7 @@ const esc=x=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;',
 function getPerson(id){const a=sim.byId&&sim.byId.get(id);if(a&&a.energy>0)return {live:true,a};const r=sim.arch&&sim.arch.get(id);return r?{live:false,a:r}:null;}
 function lgPersonLink(id,fallback){const p=getPerson(id);if(!p)return esc(fallback||'?');const a=p.a;return `<a href="#" class="lgl" onclick="lgGo('p',${id});return false">${esc(a.name)} ${esc(a.surname)}${p.live?'':' †'}</a>`;}
 function lgTribeLink(id){const t=sim.tribes[id];if(!t)return '?';return `<a href="#" class="lgl" style="color:${t.color}" onclick="lgGo('k',${id});return false">${esc(t.name)}</a>`;}
-function lgLinkText(text,tr){let h=esc(text);for(const id of (tr||[])){const t=sim.tribes[id];if(t)h=h.split(esc(t.name)).join(`<a href="#" class="lgl" style="color:${t.color}" onclick="lgGo('k',${id});return false">${esc(t.name)}</a>`);}return h;}
+function lgLinkText(text,tr){let h=esc(window.I18N?I18N.translate(text):text);for(const id of (tr||[])){const t=sim.tribes[id];if(t)h=h.split(esc(t.name)).join(`<a href="#" class="lgl" style="color:${t.color}" onclick="lgGo('k',${id});return false">${esc(t.name)}</a>`);}return '<span data-i18n-skip data-i18n-source="'+esc(text)+'">'+h+'</span>';}
 function lgGo(type,id,noPush){if(!noPush)LG.stack.push({tab:LG.tab,sel:LG.sel,q:LG.q,filt:LG.filt,kfilt:LG.kfilt});LG.sel={type,id};LG.tab=type==='p'?'kisi':type==='k'?'kral':type==='w'?'sav':LG.tab;renderLegends();const d=document.getElementById('lgDetail');if(d)d.scrollTop=0;}
 function lgBack(){const p=LG.stack.pop();if(p){LG.tab=p.tab;LG.sel=p.sel;LG.q=p.q||'';LG.filt=p.filt||'hepsi';LG.kfilt=p.kfilt||'hepsi';renderLegends();}}
 function openLegends(tab,id){document.getElementById('histOverlay').style.display='block';if(tab==='kral'&&id!=null){LG.tab='kral';LG.sel={type:'k',id};}else if(tab==='kisi'&&id!=null){LG.tab='kisi';LG.sel={type:'p',id};}else if(tab){LG.tab=tab;LG.sel=null;}renderLegends();}
@@ -1737,7 +1777,7 @@ function lgKingdomDetail(id){const t=sim.tribes[id];if(!t)return '';
   return `<div class="lgback">${LG.stack.length?'<button onclick="lgBack()">← Geri</button>':''}</div>
    <div class="lgname" style="color:${t.color}">${esc(t.name)}</div>
    <div class="lgsub">${fell?`yıkıldı (Y${yrOf(t._fell)})`:'yaşıyor'} · kuruluş Y${yrOf(t._founded)}${t._from!=null&&sim.tribes[t._from]?` · ${lgTribeLink(t._from)} krallığından ayrıldı`:''}${dyn}</div>
-   <div class="lgsub">${fell?'':`nüfus <b>${t.pop}</b> · `}en yüksek nüfus <b>${peak}</b> · şehir <b>${t.cities.length}</b> · çağ <b>${ERA5[(t.era||1)-1]}</b> · <b>${wars}</b> savaş kaydı</div>
+   <div class="lgsub">${fell?'':`nüfus:<b style="margin-left:4px">${t.pop}</b> · `}en yüksek nüfus:<b style="margin-left:4px">${peak}</b> · <b>${t.cities.length} şehir</b> · çağ:<b style="margin-left:4px">${ERA5[(t.era||1)-1]}</b> · <b>${wars} savaş kaydı</b></div>
    <h3>Nüfus</h3>${popChart([t],640,150,ev.slice().reverse())}
    <h3>Hükümdarlar</h3><table class="lgtab"><tbody>${t.rulers.slice().reverse().map(r=>`<tr><td>${lgPersonLink(r.id,r.name)}</td><td>Y${yrOf(r.from)} – ${r.to!=null?'Y'+yrOf(r.to):'şimdi'}</td><td>${esc(r.how)}</td></tr>`).join('')||'<tr><td>—</td></tr>'}</tbody></table>
    ${!fell?`<h3>Şehirler</h3><div class="lgsub">${t.cities.map((c,i)=>esc(c.name)+(i===0?' (başkent)':'')).join(' · ')}</div>`:''}
@@ -1752,8 +1792,12 @@ function lgWarDetail(id){const w=(sim.wars||[])[id];if(!w)return '';const A=sim.
    <h3>Gerekçe ve taraflar</h3><div class="lgrow"><span>saldıran</span><span>${lgTribeLink(w.a)}${w.ruler!=null?' · hükümdar '+lgPersonLink(w.ruler):''}</span></div><div class="lgrow"><span>savunan</span><span>${lgTribeLink(w.b)}</span></div><div class="lgrow"><span>gerekçe</span><span>${esc(w.reason)}</span></div>
    <h3>Kayıplar ve sonuç</h3><div class="lgrow"><span>${esc(A.name)}</span><span>${w.da} kişi öldürüldü</span></div><div class="lgrow"><span>${esc(B.name)}</span><span>${w.db} kişi öldürüldü</span></div><div class="lgrow"><span>sonuç</span><span>${w.out?esc(w.out):'henüz belli değil'}</span></div>
    <h3>Olaylar</h3><ul class="lgul">${ev.map(e=>`<li><b>Y${yrOf(e.t)}</b> · ${lgLinkText(e.text,e.tr)}</li>`).join('')||'<li>kayıt yok</li>'}</ul>`;}
-function renderLegends(keepFocus){
+function renderLegends(keepFocus,keepScroll){
+  const host=document.getElementById('histOverlay');
+  if(host&&host.style.display!=='block')return;
   const el=document.getElementById('histBody');if(!el||!sim)return;
+  const oldList=keepScroll?el.querySelector('.lglist'):null,oldDetail=keepScroll?el.querySelector('.lgdetail'):null;
+  const listScroll=oldList?oldList.scrollTop:0,detailScroll=oldDetail?oldDetail.scrollTop:0;
   const nPeople=sim.agents.length+(sim.arch?sim.arch.size:0);
   document.getElementById('histInfo').textContent=`yıl ${yrOf(sim.tick)} · ${nPeople} kişi kaydı · ${(sim.log||[]).length} olay · ${sim.tribes.length} krallık`;
   const tabs=[['dunya','Dünya'],['kisi','Kişiler'],['kral','Krallıklar'],['sav','Savaşlar'],['olay','Olaylar'],['efs','Efsaneler']];
@@ -1792,7 +1836,33 @@ function renderLegends(keepFocus){
   el.innerHTML=`<div class="lgtabs">${tabs.map(([k,n])=>`<button class="${LG.tab===k?'on':''}" onclick="lgTab('${k}')">${n}</button>`).join('')}</div>
     <div class="lgbody ${list?'':'one'}">${list?`<div class="lglist">${list}</div>`:''}<div class="lgdetail" id="lgDetail">${detail}</div></div>`;
   const f=document.getElementById('lgFig');if(f&&LG.sel&&LG.sel.type==='p'){const P=getPerson(LG.sel.id);if(P){const a=P.a,g=f.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role==='CHILD'?'CHILD':a.role,sex:a.sex,born:sim.tick-(a.died-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c){g.imageSmoothingEnabled=true;g.drawImage(sp.c,0,0,72,96);}}}
+  try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(document.getElementById('histOverlay')||el);}catch(_){ }
+  const newList=keepScroll?el.querySelector('.lglist'):null,newDetail=keepScroll?el.querySelector('.lgdetail'):null;
+  if(newList)newList.scrollTop=listScroll;if(newDetail)newDetail.scrollTop=detailScroll;
   if(keepFocus){const q=document.getElementById('lgQ');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length);}}}
+// One app-owned place for language-change side effects. The i18n layer only
+// emits i18n:change; it no longer reaches into canvas/history rendering.
+window.addEventListener('i18n:change',()=>{
+  const hb=document.getElementById('histBody');
+  const ho=document.getElementById('histOverlay');
+  const histOpen=!!(ho&&ho.style.display==='block');
+  const oldList=histOpen&&hb?hb.querySelector('.lglist'):null;
+  const oldDetail=histOpen&&hb?hb.querySelector('.lgdetail'):null;
+  const listScroll=oldList?oldList.scrollTop:0;
+  const detailScroll=oldDetail?oldDetail.scrollTop:0;
+  try{if(typeof render==='function')render();}catch(_){ }
+  if(histOpen){
+    try{if(typeof renderLegends==='function')renderLegends(false,true);}catch(_){ }
+    const restore=()=>{
+      const l=hb&&hb.querySelector('.lglist'),d=hb&&hb.querySelector('.lgdetail');
+      if(l)l.scrollTop=listScroll;if(d)d.scrollTop=detailScroll;
+    };
+    restore();
+    // Focus changes and the mutation observer can still move a scroll container
+    // by one frame; restore once more after those have settled.
+    requestAnimationFrame(restore);
+  }
+});
 document.getElementById('histBtn').onclick=()=>{openLegends();};
 document.getElementById('chronBtn').onclick=()=>{openLegends('olay');};
 
@@ -1801,14 +1871,14 @@ let toastLast=0;
 function toast(text,kind,ref){if(!UI)return;const box=document.getElementById('toasts');if(!box||!box.appendChild)return;
   const now=performance.now();if(kind!=='watch'&&now-toastLast<900)return;toastLast=now;
   if(settings.noToast)return;
-  const d=document.createElement('div');d.className='toast '+(kind||'');d.innerHTML=`<span class="tk">${kind==='watch'?'★':kind==='war'?'⚔':kind==='pol'?'♛':kind==='nat'?'☁':'•'}</span><span>${esc(text)}</span>`;
+  const d=document.createElement('div');d.className='toast '+(kind||'');d.innerHTML=`<span class="tk">${kind==='watch'?'★':kind==='war'?'⚔':kind==='pol'?'♛':kind==='nat'?'☁':'•'}</span><span class="tx" title="${esc(text)}">${esc(text)}</span>`;
   d.onclick=()=>{if(ref&&ref.tab){showTab(ref.tab);d.remove();return;}if(ref&&ref.id!=null&&sim.byId.get(ref.id))followId(ref.id);else if(ref&&ref.tr!=null&&sim.tribes[ref.tr]&&!sim.tribes[ref.tr]._dead){const c=capital(sim.tribes[ref.tr]);view.z=Math.max(view.z,1.8);view.cx=c.x;view.cy=c.y;view.follow=false;selectCity(ref.tr,0);render();}else if(ref&&ref.id!=null)openLegends('kisi',ref.id);d.remove();};
   box.appendChild(d);while(box.children.length>4)box.firstChild.remove();setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),500);},settings.reduceMotion?5000:9000);}
 function maybeToast(ev){if(!sim||sim._booting)return;const t=ev.text;
   if(ev.pp&&ev.pp.some(id=>watchIds.includes(id))){toast(t,'watch',{id:ev.pp.find(id=>watchIds.includes(id))});return;}
   if(!evMajor(t))return;const kind=ev.kind==='savaş'?'war':ev.kind==='siyaset'?'pol':ev.kind==='doğa'?'nat':'';
   if(ev.kind==='kültür'||ev.kind==='aile')return;
-  toast(t.length>110?t.slice(0,108)+'…':t,kind,{tr:ev.tr&&ev.tr.length?ev.tr[0]:null,id:ev.pp&&ev.pp.length?ev.pp[0]:null});}
+  toast(t,kind,{tr:ev.tr&&ev.tr.length?ev.tr[0]:null,id:ev.pp&&ev.pp.length?ev.pp[0]:null});}
 function renderYearly(){const el=document.getElementById('yearly');if(!el||!sim)return;const Y=(sim.yearly||[]).slice(0,8);
   if(!Y.length){el.innerHTML='<div class="empty">Yıl sonunda burada özet belirir.</div>';return;}
   el.innerHTML=`<table class="ytab"><thead><tr><th>yıl</th><th title="nüfus">nüfus</th><th title="doğum">+d</th><th title="ölüm">−ö</th><th title="evlilik">♥</th><th title="savaş ilanı">⚔</th><th title="isyan / darbe / yıkılış">⚑</th><th title="tahta çıkış">♛</th><th title="kıtlık / salgın">☠</th></tr></thead><tbody>`+
@@ -1864,9 +1934,10 @@ renderModeChips();
     ['Hikâyeyi takip et','Bir kişinin kartında <b>☆ İzleme listesine ekle</b>: haritanın altındaki çubukta durur, başına olay gelince bildirim çıkar. <b>📜 Tarih Kitabı</b> ölenler dahil herkesin ve her krallığın geçmişini tutar.']];
   let i=0;const el=document.getElementById('tour');
   const show=()=>{if(i>=steps.length){el.style.display='none';try{localStorage.setItem('krTour','1');}catch(e){}return;}
-    el.style.display='block';el.innerHTML=`<h3>${steps[i][0]}</h3><p>${steps[i][1]}</p><div class="tb"><button class="primary" id="tourNext">${i<steps.length-1?'Sonraki':'Başla'}</button><button id="tourSkip">Atla</button><span class="dots">${i+1} / ${steps.length}</span></div>`;
+    const _st=window.I18N?I18N.tourStep(steps[i][0],steps[i][1]):{title:steps[i][0],body:steps[i][1]};el.style.display='block';el.innerHTML=`<h3>${_st.title}</h3><p>${_st.body}</p><div class="tb"><button class="primary" id="tourNext">${i<steps.length-1?'Sonraki':'Başla'}</button><button id="tourSkip">Atla</button><span class="dots">${i+1} / ${steps.length}</span></div>`;
     document.getElementById('tourNext').onclick=()=>{i++;show();};document.getElementById('tourSkip').onclick=()=>{i=steps.length;show();};};
   const tb=document.getElementById('tourBtn');if(tb)tb.onclick=()=>{i=0;show();};
+  window.addEventListener('i18n:change',()=>{if(el.style.display==='block')show();});
   let seen=false;try{seen=localStorage.getItem('krTour')==='1';}catch(e){}
   if(!seen&&!navigator.webdriver&&!/notour/.test(location.search))setTimeout(show,1500);})();
 
@@ -1994,14 +2065,14 @@ function renderAdvisor(){const el=document.getElementById('advBox');const tab=do
   if(tab)tab.classList.toggle('badge',!!(sim.adv&&sim.adv.pending&&!sim.adv.ended));if(!el)return;
   const A=sim.adv;
   if(!A){const L=sim.tribes.filter(t=>!t._dead&&t.cities.length).sort((a,b)=>b.pop-a.pop);
-    el.innerHTML=`<p class="advp"><b>Danışman modu.</b> Bir krallığın saray danışmanı olursun. Hedefin <b>büyüme</b>: nüfus, şehir, toprak ve buluşlarla krallığı Beylikten İmparatorluğa taşı. Birkaç yılda bir hükümdar sana bir ikilem getirir; tavsiyen, hükümdarın <b>güvenine</b> göre dinlenir. Kötü tavsiye güveni düşürür.</p>
+    el.innerHTML=`<p class="advp" data-i18n-html="advisorIntro"><b>Danışman modu.</b> Bir krallığın saray danışmanı olursun. Hedefin <b>büyüme</b>: nüfus, şehir, toprak ve buluşlarla krallığı Beylikten İmparatorluğa taşı. Birkaç yılda bir hükümdar sana bir ikilem getirir; tavsiyen, hükümdarın <b>güvenine</b> göre dinlenir. Kötü tavsiye güveni düşürür.</p>
       <div class="lgsub" style="margin:6px 0">Hangi krallığa hizmet edeceksin?</div>`+L.map(t=>{const r=rulerOf(t);return `<div class="advk"><span class="dot" style="background:${t.color}"></span><div style="flex:1"><b style="color:${t.color}">${esc(t.name)}</b> <span class="lgsub">${t.pop} kişi · ${t.cities.length} şehir · ${ERA5[(t.era||1)-1]}</span><div class="lgsub">hükümdar: ${r?esc(r.name+' '+r.surname)+' ('+esc(persWords(r))+')':'—'}</div></div><button onclick="advStart(${t.id})" style="padding:5px 10px;font-size:11px">🎩 Danışman ol</button></div>`;}).join('');return;}
   const t=sim.tribes[A.tid],g=growthIdx(t),ratio=g/A.g0,rk=advRank(Math.max(A.best,ratio)),next=GROWTH_RANKS[rk+1],cur=GROWTH_RANKS[rk];
   const prog=next?clamp((ratio-cur[0])/(next[0]-cur[0])):1,rl=rulerOf(t),alive=sim.tribes.filter(x=>!x._dead),worldRank=alive.slice().sort((a,b)=>growthIdx(b)-growthIdx(a)).findIndex(x=>x.id===t.id)+1;
   const spark=(()=>{const S=A.sc;if(S.length<2)return '';const w=300,h=60,mx=Math.max(...S.map(p=>p.g/A.g0),1.2),X=i=>6+i/(S.length-1)*(w-12),Y=v=>h-6-(v/mx)*(h-12);return `<svg viewBox="0 0 ${w} ${h}" width="100%"><polyline fill="none" stroke="${t.color}" stroke-width="2" points="${S.map((p,i)=>X(i).toFixed(1)+','+Y(p.g/A.g0).toFixed(1)).join(' ')}"/><line x1="6" x2="${w-6}" y1="${Y(1)}" y2="${Y(1)}" stroke="#8f6d2c" stroke-dasharray="3 3"/></svg>`;})();
-  let h=`<div class="advh"><span class="dot" style="background:${t.color}"></span><b style="color:${t.color};font:700 17px var(--display)">${esc(t.name)}</b><button onclick="if(confirm('Danışmanlıktan ayrılmak istiyor musun?'))advStop()" style="margin-left:auto;padding:3px 9px;font-size:11px">ayrıl</button></div>
+  let h=`<div class="advh"><span class="dot" style="background:${t.color}"></span><b style="color:${t.color};font:700 17px var(--display)">${esc(t.name)}</b><button onclick="if(confirm(window.I18N?I18N.translate('Danışmanlıktan ayrılmak istiyor musun?'):'Danışmanlıktan ayrılmak istiyor musun?'))advStop()" style="margin-left:auto;padding:3px 9px;font-size:11px">ayrıl</button></div>
    <div class="lgsub">hükümdar: ${rl?`<a href="#" class="lgl" onclick="selectLegend(${rl.id});return false">${esc(rl.name+' '+rl.surname)}</a>`:'—'}${A.ended?' · <b style="color:#e0584a">krallık yıkıldı</b>':''}</div>
-   <div class="advrank"><div class="advrk">${GROWTH_RANKS[rk][1]}</div><div class="nbb" style="margin:4px 0"><i style="width:${(prog*100)|0}%"></i></div><div class="lgsub">büyüme ${(ratio*100)|0}% (başlangıç = %100) · ${next?`sonraki: ${next[1]} (%${next[0]*100})`:'en üst rütbe'} · dünyada <b>${worldRank}.</b></div></div>
+   <div class="advrank"><div class="advrk">${GROWTH_RANKS[rk][1]}</div><div class="nbb" style="margin:4px 0"><i style="width:${(prog*100)|0}%"></i></div><div class="lgsub">büyüme ${(ratio*100)|0}% (başlangıç = %100) · ${next?`sonraki: ${next[1]} (%${next[0]*100})`:'en üst rütbe'} · <b>dünyada ${worldRank}.</b></div></div>
    <div class="advstats"><span>👥 ${t.pop}</span><span>🏛 ${t.cities.length}</span><span>🗺 ${t.land}</span><span>🔬 ${Object.keys(t.techs).length+Object.keys(t.civics||{}).length}</span><span>🪙 ${t.treasury|0}</span><span>⚖ %${(t.legit*100)|0}</span></div>
    ${spark}`;
   if(A.ended){h+=`<div class="advcard"><b>Hizmetin sona erdi.</b><div class="lgsub">En yüksek rütben: <b>${GROWTH_RANKS[advRank(A.best)][1]}</b> (%${(A.best*100)|0}). </div><button onclick="advStop()" style="margin-top:8px">Yeni krallık seç</button></div>`;}
@@ -2209,5 +2280,2602 @@ function renderChronicle(){
 document.getElementById('chronBtn').onclick=()=>{document.getElementById('chronOverlay').style.display='block';renderChronicle();};
 document.getElementById('chronClose').onclick=()=>document.getElementById('chronOverlay').style.display='none';
 </script>
+<!-- I18N-START -->
+<script>
+(function(){
+/* ============================================================================
+   I18N — runtime localisation layer for the single-file simulation.
+   Source strings stay Turkish (event typing and seeded history depend on them);
+   only what reaches the screen is translated. English is the default UI language.
+   ========================================================================== */
+'use strict';
+
+const I18N_SUPPORTED = ['en', 'zh', 'tr'];
+const I18N_NAMES = { en: 'English', zh: '中文', tr: 'Türkçe' };
+const I18N_DEFAULT = 'en';
+const I18N_PARAMS = new URLSearchParams(location.search || '');
+const I18N_DEBUG = I18N_PARAMS.has('i18n-debug');
+
+let I18N_LANG = I18N_DEFAULT;
+let I18N_INITED = false;
+let I18N_INITING = false;
+const I18N_LISTENERS = new Set();
+let I18N_OBSERVER = null;
+const I18N_EXACT = new Map();          // Turkish source -> { en, zh }
+const I18N_RULES = [];                 // ordered regex rules: { re, en(m), zh(m) }
+const I18N_BLOCKS = new Map();         // data-i18n-html blocks with markup
+const I18N_TOUR = [];                  // onboarding steps (title/body per language)
+const I18N_MISSING = new Map();        // source -> count (debug only)
+const I18N_CONFLICTS = [];             // duplicate source keys with different values
+const I18N_CACHE = new Map();          // lang + source -> rendered text (hot labels repeat every tick)
+const I18N_TEXT_RECS = new WeakMap();  // text node -> { src, outs: { en, zh, tr } }
+const I18N_ATTR_RECS = new WeakMap();  // element -> { attr: { src, outs } }
+
+function add(tr, en, zh) {
+  if (!tr || en == null || zh == null) return;
+  const next = { en: String(en), zh: String(zh) };
+  const prev = I18N_EXACT.get(tr);
+  if (prev && (prev.en !== next.en || prev.zh !== next.zh)) {
+    I18N_CONFLICTS.push({ source: tr, previous: { ...prev }, next: { ...next } });
+    if (I18N_DEBUG) console.warn('[i18n] conflicting translation for', JSON.stringify(tr), prev, next);
+  }
+  I18N_EXACT.set(tr, next);
+}
+function addBlock(key, tr, en, zh) {
+  I18N_BLOCKS.set(key, { tr, en, zh });
+}
+function addTour(titleTr, titleEn, titleZh, bodyTr, bodyEn, bodyZh) {
+  I18N_TOUR.push({ title: { tr: titleTr, en: titleEn, zh: titleZh }, body: { tr: bodyTr, en: bodyEn, zh: bodyZh } });
+}
+
+function i18nLang() { return I18N_LANG; }
+function i18nName(lang) { return I18N_NAMES[lang || I18N_LANG] || I18N_NAMES.en; }
+
+function i18nCap(s) {
+  if (!s) return s;
+  return s.charAt(0).toLocaleUpperCase(I18N_LANG === 'tr' ? 'tr' : 'en') + s.slice(1);
+}
+function i18nCore(core, allowSplit, allowProse) {
+  let hit = I18N_EXACT.get(core);
+  if (hit) return hit[I18N_LANG] != null ? hit[I18N_LANG] : hit.en;
+
+  // Title-case / ALL-CAPS fallback: labels in the app are often written with a
+  // capital letter and uppercased again by CSS, so translate their base form.
+  if (/^[A-ZÇĞİÖŞÜ]/.test(core)) {
+    const lower = core.toLocaleLowerCase('tr');
+    hit = I18N_EXACT.get(lower);
+    if (hit) {
+      let out = hit[I18N_LANG] != null ? hit[I18N_LANG] : hit.en;
+      if (I18N_LANG !== 'zh') out = i18nCap(out);
+      return out;
+    }
+  }
+
+  // A leading bullet is decoration: translate the body with full rule priority.
+  if (allowSplit && core.startsWith('· ')) {
+    const body = core.slice(2);
+    const q = i18nCore(body, true, allowProse);
+    if (q !== body) return '· ' + q;
+  }
+
+  for (let i = 0; i < I18N_RULES.length; i++) {
+    const r = I18N_RULES[i];
+    const m = r.re.exec(core);
+    if (!m) continue;
+    const out = r[I18N_LANG] != null ? r[I18N_LANG](m) : r.en(m);
+    if (out == null) continue;
+    const expected = String(out);
+    if (expected === core) continue;
+    // A catch-all rule (e.g. "(.+?): (.+)") can rewrite only the tail and leave
+    // a whole sentence untouched. Reject such partial matches so a more
+    // specific rule or the prose splitter gets a chance.
+    const probe = core.slice(0, Math.min(30, core.length));
+    if (probe.length >= 12 && expected.includes(probe)) continue;
+    return expected;
+  }
+
+  if (allowProse && core.length > 55 && core.includes('. ')) {
+    const sentences = i18nSentenceParts(core);
+    if (sentences.length > 1) {
+      let changed = false;
+      const outs = sentences.map(s => {
+        const q = i18nCore(s, true, false);
+        if (q !== s) changed = true;
+        return q;
+      });
+      if (changed) return outs.join(' ');
+    }
+  }
+
+  if (allowSplit && core.includes(' · ')) {
+    const parts = core.split(' · ');
+    let changed = false;
+    const outs = parts.map(p => {
+      const q = i18nCore(p, true, false);
+      if (q !== p) changed = true;
+      return q;
+    });
+    if (changed) return outs.join(' · ');
+  }
+  if (allowSplit && core.endsWith(' ·')) {
+    const q = i18nCore(core.slice(0, -2), true, false);
+    if (q !== core.slice(0, -2)) return q + ' ·';
+  }
+  if (allowSplit && core.startsWith('· ')) {
+    const q = i18nCore(core.slice(2), true, false);
+    if (q !== core.slice(2)) return '· ' + q;
+  }
+
+  if (/[.!?]$/.test(core) && core.length > 1) {
+    const body = core.slice(0, -1);
+    const q = i18nCore(body, true, false);
+    if (q !== body) return q + core.slice(-1);
+  }
+  return core;
+}
+
+function i18nSentenceParts(text) {
+  const out = [];
+  const re = /[.!?]\s+(?=[A-ZÇĞİÖŞÜ0-9])/g;
+  let start = 0, m;
+  while ((m = re.exec(text))) {
+    out.push(text.slice(start, m.index + 1));
+    start = m.index + m[0].length;
+  }
+  if (start < text.length) out.push(text.slice(start));
+  return out.length ? out : [text];
+}
+
+function i18nZhPunct(s) {
+  return s
+    .replace(/([\u4e00-\u9fff])\.(?=\s|$)/g, '$1。')
+    .replace(/([\u4e00-\u9fff]),(?=\s|$)/g, '$1，')
+    .replace(/）\s*·\s*/g, '） · ');
+}
+
+function i18nTranslate(raw) {
+  if (raw == null || I18N_LANG === 'tr') return raw;
+  const str = String(raw);
+  const cacheKey = I18N_LANG + '\u0000' + str;
+  if (I18N_CACHE.has(cacheKey)) {
+    const hit = I18N_CACHE.get(cacheKey);
+    I18N_CACHE.delete(cacheKey);
+    I18N_CACHE.set(cacheKey, hit);
+    return hit;
+  }
+  const lead = str.match(/^\s*/)[0];
+  const tail = str.match(/\s*$/)[0];
+  const core = str.slice(lead.length, str.length - tail.length);
+  let out = str;
+  if (core) {
+    out = i18nCore(core, true, true);
+    if (I18N_LANG === 'zh') out = i18nZhPunct(out);
+    if (I18N_DEBUG && out === core && /[ğĞıİşŞçÇöÖüÜâî]/.test(core)) {
+      I18N_MISSING.set(core, (I18N_MISSING.get(core) || 0) + 1);
+    }
+    out = lead + out + tail;
+  }
+  if (I18N_CACHE.size >= 20000) {
+    const oldest = I18N_CACHE.keys().next().value;
+    if (oldest !== undefined) I18N_CACHE.delete(oldest);
+  }
+  I18N_CACHE.set(cacheKey, out);
+  return out;
+}
+
+function i18nTranslateNode(node) {
+  const cur = node.nodeValue;
+  if (cur == null || !cur.trim()) return;
+  let rec = I18N_TEXT_RECS.get(node);
+  if (!rec || !Object.values(rec.outs).includes(cur)) {
+    rec = { src: cur, outs: {} };
+    I18N_TEXT_RECS.set(node, rec);
+  }
+  const out = i18nTranslate(rec.src);
+  rec.outs[I18N_LANG] = out;
+  if (out !== cur) node.nodeValue = out;
+}
+
+function i18nTranslateAttr(el, attr) {
+  const cur = el.getAttribute && el.getAttribute(attr);
+  if (cur == null) return;
+  let map = I18N_ATTR_RECS.get(el);
+  if (!map) { map = {}; I18N_ATTR_RECS.set(el, map); }
+  let rec = map[attr];
+  if (!rec || !Object.values(rec.outs).includes(cur)) {
+    rec = { src: cur, outs: {} };
+    map[attr] = rec;
+  }
+  const out = i18nTranslate(rec.src);
+  rec.outs[I18N_LANG] = out;
+  if (out !== cur) el.setAttribute(attr, out);
+}
+
+const I18N_ATTRS = ['title', 'placeholder', 'aria-label', 'alt'];
+const I18N_SKIP_TAGS = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1 };
+function i18nSkipped(el) {
+  for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+    if (n.hasAttribute && n.hasAttribute('data-i18n-skip')) return true;
+  }
+  return false;
+}
+function i18nFilter(node) {
+  if (node.nodeType === 1) {
+    if (I18N_SKIP_TAGS[node.tagName]) return NodeFilter.FILTER_REJECT;
+    if (node.hasAttribute('data-i18n-skip')) return NodeFilter.FILTER_REJECT;
+  }
+  return NodeFilter.FILTER_ACCEPT;
+}
+function i18nProcess(el) {
+  if (el.nodeType === 1) {
+    if (I18N_SKIP_TAGS[el.tagName] || i18nSkipped(el)) return;
+    for (const a of I18N_ATTRS) if (el.hasAttribute(a)) i18nTranslateAttr(el, a);
+  }
+}
+function i18nLocalizeSubtree(root) {
+  if (!root) return;
+  i18nApplyBlocks(root);
+  if (root.nodeType === 3) { i18nTranslateNode(root); return; }
+  if (root.nodeType !== 1) return;
+  if (I18N_SKIP_TAGS[root.tagName] || i18nSkipped(root)) return;
+  i18nProcess(root);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, { acceptNode: i18nFilter });
+  let n;
+  while ((n = walker.nextNode())) {
+    if (n.nodeType === 3) i18nTranslateNode(n);
+    else i18nProcess(n);
+  }
+}
+function i18nLocalizeAll() {
+  if (!document.body) return;
+  i18nLocalizeSubtree(document.body);
+}
+
+let I18N_PENDING = new Set();
+let I18N_SCHEDULED = false;
+function i18nQueue(root) {
+  if (I18N_LANG === 'tr' || !root || !root.isConnected) return;
+  I18N_PENDING.add(root);
+  if (I18N_SCHEDULED) return;
+  I18N_SCHEDULED = true;
+  requestAnimationFrame(() => {
+    I18N_SCHEDULED = false;
+    const roots = Array.from(I18N_PENDING);
+    I18N_PENDING.clear();
+    for (const r of roots) { try { i18nLocalizeSubtree(r); } catch (_) {} }
+  });
+}
+
+function i18nApplyBlocks(root) {
+  if (root && root.nodeType !== 1) return;
+  const list = [];
+  if (root && root !== document.body && root.nodeType === 1) {
+    if (root.hasAttribute && root.hasAttribute('data-i18n-html')) list.push(root);
+    if (root.querySelectorAll) list.push(...root.querySelectorAll('[data-i18n-html]'));
+  } else {
+    list.push(...document.querySelectorAll('[data-i18n-html]'));
+  }
+  for (const el of list) {
+    const rec = I18N_BLOCKS.get(el.getAttribute('data-i18n-html'));
+    if (!rec) continue;
+    let out = rec[I18N_LANG] != null ? rec[I18N_LANG] : rec.en;
+    if (I18N_LANG === 'zh') out = i18nZhPunct(out);
+    if (el.__i18nHtml !== out) { el.innerHTML = out; el.__i18nHtml = out; }
+  }
+}
+
+function i18nUpdateSwitch() {
+  const label = document.getElementById('langLabel');
+  if (label) label.textContent = I18N_NAMES[I18N_LANG];
+  document.querySelectorAll('#langMenu [data-lang]').forEach(b => {
+    b.classList.toggle('on', b.getAttribute('data-lang') === I18N_LANG);
+    b.setAttribute('aria-current', b.getAttribute('data-lang') === I18N_LANG ? 'true' : 'false');
+  });
+  const btn = document.getElementById('langBtn');
+  if (btn) {
+    btn.setAttribute('aria-expanded', btn.getAttribute('aria-expanded') || 'false');
+    btn.title = I18N_LANG === 'zh' ? '语言' : I18N_LANG === 'tr' ? 'Dil' : 'Language';
+  }
+}
+
+function i18nNormalizeLang(value) {
+  const code = String(value || '').toLowerCase().split('-')[0];
+  return I18N_SUPPORTED.includes(code) ? code : null;
+}
+
+function i18nOpenMenu(focusItem) {
+  const box = document.getElementById('langSwitch');
+  if (!box) return;
+  box.classList.add('open');
+  const btn = document.getElementById('langBtn');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  if (focusItem) {
+    const menu = document.getElementById('langMenu');
+    const current = menu && menu.querySelector('[data-lang="' + I18N_LANG + '"]');
+    const first = menu && menu.querySelector('[data-lang]');
+    const target = current || first;
+    if (target) target.focus();
+  }
+}
+
+function i18nCloseMenu(returnFocus) {
+  const box = document.getElementById('langSwitch');
+  if (!box) return;
+  box.classList.remove('open');
+  const btn = document.getElementById('langBtn');
+  if (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+    if (returnFocus) btn.focus();
+  }
+}
+
+function i18nFocusMenuItem(delta) {
+  const menu = document.getElementById('langMenu');
+  if (!menu) return;
+  const items = Array.from(menu.querySelectorAll('[data-lang]'));
+  if (!items.length) return;
+  let idx = items.indexOf(document.activeElement);
+  if (idx < 0) idx = delta > 0 ? -1 : 0;
+  items[(idx + delta + items.length) % items.length].focus();
+}
+
+function i18nSetLang(next) {
+  next = i18nNormalizeLang(next) || I18N_DEFAULT;
+  const menuWasOpen = !!document.querySelector('#langSwitch.open');
+  I18N_LANG = next;
+  try { localStorage.setItem('krLang', next); } catch (_) {}
+  try {
+    const url = new URL(location.href);
+    if (url.searchParams.has('lang')) {
+      url.searchParams.delete('lang');
+      history.replaceState(null, '', url.href);
+    }
+  } catch (_) {}
+  document.documentElement.lang = next === 'zh' ? 'zh-CN' : next;
+  if (document.body) document.body.classList.toggle('lang-zh', next === 'zh');
+  document.title = i18nTranslate('Krallıklar Simülasyonu');
+  i18nApplyBlocks();
+  i18nLocalizeAll();
+  i18nUpdateSwitch();
+  i18nCloseMenu(menuWasOpen);
+  // The i18n layer must not know about app render functions. The app listens
+  // for this event and refreshes canvas/history/tour surfaces in one place.
+  window.dispatchEvent(new CustomEvent('i18n:change', { detail: { lang: next } }));
+}
+
+function i18nBindOnce(key, target, type, handler, opts) {
+  if (!target || I18N_LISTENERS.has(key)) return;
+  target.addEventListener(type, handler, opts);
+  I18N_LISTENERS.add(key);
+}
+
+function i18nInit() {
+  if (I18N_INITED) return { lang: I18N_LANG };
+  if (I18N_INITING) return { lang: I18N_LANG };
+  I18N_INITING = true;
+  try {
+    const result = i18nInitOnce();
+    I18N_INITED = true;
+    return result;
+  } finally {
+    I18N_INITING = false;
+  }
+}
+
+function i18nInitOnce() {
+  let saved = null;
+  try { saved = localStorage.getItem('krLang'); } catch (_) {}
+  const requested = i18nNormalizeLang(I18N_PARAMS.get('lang'));
+  const savedLang = i18nNormalizeLang(saved);
+  const initial = requested || savedLang || I18N_DEFAULT;
+  I18N_LANG = initial;
+  if (requested) {
+    try { localStorage.setItem('krLang', requested); } catch (_) {}
+  }
+
+  const btn = document.getElementById('langBtn');
+  const menu = document.getElementById('langMenu');
+  if (btn && menu) {
+    i18nBindOnce('langBtn.click', btn, 'click', e => {
+      e.stopPropagation();
+      if (document.getElementById('langSwitch').classList.contains('open')) i18nCloseMenu(true);
+      else i18nOpenMenu(true);
+    });
+    i18nBindOnce('langBtn.keydown', btn, 'keydown', e => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      i18nOpenMenu(true);
+      if (e.key === 'ArrowUp') {
+        const items = Array.from(menu.querySelectorAll('[data-lang]'));
+        if (items.length) items[items.length - 1].focus();
+      }
+    });
+    i18nBindOnce('langMenu.click', menu, 'click', e => {
+      const b = e.target.closest && e.target.closest('[data-lang]');
+      if (!b) return;
+      i18nSetLang(b.getAttribute('data-lang'));
+    });
+    i18nBindOnce('langMenu.keydown', menu, 'keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        i18nFocusMenuItem(e.key === 'ArrowDown' ? 1 : -1);
+      } else if (e.key === 'Home' || e.key === 'End') {
+        e.preventDefault();
+        const items = Array.from(menu.querySelectorAll('[data-lang]'));
+        if (items.length) (e.key === 'Home' ? items[0] : items[items.length - 1]).focus();
+      } else if (e.key === 'Tab') {
+        i18nCloseMenu(true);
+      }
+    });
+    i18nBindOnce('doc.click', document, 'click', e => {
+      if (!e.target.closest || !e.target.closest('#langSwitch')) i18nCloseMenu(false);
+    });
+    i18nBindOnce('doc.escape', document, 'keydown', e => {
+      if (e.key !== 'Escape') return;
+      const sw = document.getElementById('langSwitch');
+      if (sw && sw.classList.contains('open')) {
+        e.preventDefault();
+        e.stopPropagation();
+        i18nCloseMenu(true);
+      }
+    }, true);
+  }
+
+  document.documentElement.lang = I18N_LANG === 'zh' ? 'zh-CN' : I18N_LANG;
+  if (document.body) document.body.classList.toggle('lang-zh', I18N_LANG === 'zh');
+  document.title = i18nTranslate('Krallıklar Simülasyonu');
+  i18nApplyBlocks();
+  i18nLocalizeAll();
+  i18nUpdateSwitch();
+
+  if (!I18N_OBSERVER) {
+    const observer = new MutationObserver(muts => {
+      for (const m of muts) {
+        if (m.type === 'childList') {
+          m.addedNodes.forEach(n => {
+            if (n.nodeType === 3) i18nQueue(n.parentNode || n);
+            else if (n.nodeType === 1) i18nQueue(n);
+          });
+        } else if (m.type === 'characterData') {
+          i18nQueue(m.target);
+        } else if (m.type === 'attributes') {
+          i18nQueue(m.target);
+        }
+      }
+    });
+    observer.observe(document.body, {
+      subtree: true, childList: true, characterData: true,
+      attributes: true, attributeFilter: I18N_ATTRS
+    });
+    I18N_OBSERVER = observer;
+  }
+
+  // Let the app refresh its own render surfaces exactly once, after the
+  // observer is active, instead of hard-coding render()/renderLegends() here.
+  window.dispatchEvent(new CustomEvent('i18n:change', { detail: { lang: I18N_LANG, initial: true } }));
+
+  return { lang: I18N_LANG };
+}
+
+function i18nScanSkipped(el) {
+  if (!el || !el.closest) return false;
+  return !!el.closest('#langSwitch, #tour, [data-i18n-html], [data-i18n-skip]');
+}
+function i18nProperNames() {
+  const names = new Set();
+  const add = value => {
+    const str = String(value == null ? '' : value).trim();
+    if (!str) return;
+    names.add(str.toLocaleLowerCase('tr'));
+  };
+  if (typeof sim !== 'undefined' && sim) {
+    for (const a of sim.agents || []) { add(a.name); add(a.surname); }
+    if (sim.arch && sim.arch.values) for (const a of sim.arch.values()) { add(a.name); add(a.surname); }
+    for (const t of sim.tribes || []) {
+      add(t.name); add(t.dynasty);
+      for (const c of t.cities || []) add(c.name);
+      for (const r of t.rulers || []) {
+        add(r.name);
+        const p = sim.byId && sim.byId.get ? sim.byId.get(r.id) : null;
+        if (p) { add(p.name); add(p.surname); }
+      }
+    }
+    for (const l of sim.legends || []) { add(l.name); add(l.surname); }
+  }
+  return names;
+}
+function i18nLooksNameOnly(src, names) {
+  // Proper-name noise (Aygkız Karoğlu, Kühnmann, Glenmoor'ı) is filtered from
+  // the live simulation's own name pools. Unlike the old heuristic this does
+  // not hide one-word UI labels such as "Bilim", "Tarih" or "Sonbahar".
+  const text = String(src).trim();
+  if (!text) return false;
+  if (/^Y\d+$/.test(text)) return true;
+  const set = names || i18nProperNames();
+  if (set.has(text.toLocaleLowerCase('tr'))) return true;
+  const tokens = text.match(/[A-Za-zÇĞİÖŞÜçğıöşüâîû]+(?:['’][A-Za-zÇĞİÖŞÜçğıöşüâîû]+)?/g) || [];
+  if (!tokens.length) return false;
+  return tokens.every(t => {
+    if (/^\d+$/.test(t) || /^[A-Z]$/.test(t)) return true;
+    const base = t.replace(/['’].*$/, '').toLocaleLowerCase('tr');
+    return set.has(base);
+  });
+}
+function i18nScanRecorded(node) {
+  const rec = I18N_TEXT_RECS.get(node);
+  if (!rec || !rec.outs) return false;
+  const out = rec.outs[I18N_LANG];
+  return out !== undefined && out !== rec.src && out === node.nodeValue;
+}
+function i18nScanRecordedAttr(el, attr) {
+  const map = I18N_ATTR_RECS.get(el), rec = map && map[attr];
+  if (!rec || !rec.outs) return false;
+  const out = rec.outs[I18N_LANG];
+  return out !== undefined && out !== rec.src && out === el.getAttribute(attr);
+}
+function i18nScanUntranslated(opts) {
+  const out = [];
+  const seen = new Set();
+  if (!document.body || I18N_LANG === 'tr') return out;
+  const includeNames = !!(opts && opts.includeNames);
+  const includeAttrs = !(opts && opts.includeAttrs === false);
+  const includeAscii = !(opts && opts.includeAscii === false);
+  const names = i18nProperNames();
+  const consider = (src, el, node, attr) => {
+    const value = String(src == null ? '' : src).replace(/\s+/g, ' ').trim();
+    if (!value || !/[A-Za-zÇĞİÖŞÜçğıöşüâîû]/.test(value)) return;
+    if (el && (I18N_SKIP_TAGS[el.tagName] || i18nScanSkipped(el))) return;
+    if (!includeAscii && !/[ğĞıİşŞçÇöÖüÜâî]/.test(value)) return;
+    if (node && i18nScanRecorded(node)) return;
+    if (attr && i18nScanRecordedAttr(el, attr)) return;
+    const translated = i18nTranslate(value);
+    if (translated !== value) {
+      // The source has a catalog entry but is still rendered verbatim. That is
+      // exactly the failure this scanner exists to catch.
+      if (!seen.has(value)) { seen.add(value); out.push(value); }
+      return;
+    }
+    if (!includeNames && i18nLooksNameOnly(value, names)) return;
+    if (!seen.has(value)) { seen.add(value); out.push(value); }
+  };
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      if (!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      const p = n.parentElement;
+      if (!p || I18N_SKIP_TAGS[p.tagName] || i18nScanSkipped(p)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n;
+  while ((n = walker.nextNode())) consider(n.nodeValue, n.parentElement, n, null);
+  if (includeAttrs) {
+    for (const el of document.querySelectorAll('[title],[placeholder],[aria-label],[alt]')) {
+      if (!el || I18N_SKIP_TAGS[el.tagName] || i18nScanSkipped(el)) continue;
+      for (const attr of I18N_ATTRS) if (el.hasAttribute(attr)) consider(el.getAttribute(attr), el, null, attr);
+    }
+  }
+  // Event prose is pre-translated by lgLinkText() and marked skip so the
+  // observer does not translate it twice. Validate its recorded source here.
+  const histHost = document.getElementById('histOverlay');
+  for (const el of document.querySelectorAll('[data-i18n-source]')) {
+    if (histHost && el.closest('#histOverlay') && histHost.style.display !== 'block') continue;
+    const src = el.getAttribute('data-i18n-source');
+    if (!src) continue;
+    const expected = i18nTranslate(src).replace(/\s+/g, ' ').trim();
+    const actual = String(el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (expected !== actual && !seen.has(src)) { seen.add(src); out.push(src); }
+  }
+  // Blocks and tour content are translated by dedicated helpers rather than
+  // through text-node records, so validate their applied output explicitly.
+  for (const el of document.querySelectorAll('[data-i18n-html]')) {
+    const key = el.getAttribute('data-i18n-html');
+    const rec = I18N_BLOCKS.get(key);
+    if (!rec) { out.push('[block:' + key + ']'); continue; }
+    let expected = rec[I18N_LANG] != null ? rec[I18N_LANG] : rec.en;
+    if (I18N_LANG === 'zh') expected = i18nZhPunct(expected);
+    if (el.__i18nHtml !== expected) out.push('[block:' + key + ']');
+  }
+  for (let i = 0; i < I18N_TOUR.length; i++) {
+    const step = I18N_TOUR[i];
+    if (!step.title[I18N_LANG] || !step.body[I18N_LANG]) out.push('[tour:' + i + ']');
+  }
+  const tourEl = document.getElementById('tour');
+  if (tourEl && tourEl.style.display === 'block') {
+    const tourText = value => { const d = document.createElement('div'); d.innerHTML = String(value == null ? '' : value); return String(d.textContent || '').replace(/\s+/g, ' ').trim(); };
+    const title = String((tourEl.querySelector('h3') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+    const body = String((tourEl.querySelector('p') || {}).textContent || '').replace(/\s+/g, ' ').trim();
+    const steps = i18nTourSteps();
+    if (!steps.some(s => tourText(s.title) === title && tourText(s.body) === body)) out.push('[tour:visible]');
+  }
+  return out;
+}
+
+function i18nTourSteps() {
+  return I18N_TOUR.map(s => ({
+    title: s.title[I18N_LANG] != null ? s.title[I18N_LANG] : s.title.en,
+    body: s.body[I18N_LANG] != null ? s.body[I18N_LANG] : s.body.en
+  }));
+}
+
+window.I18N = {
+  get lang() { return I18N_LANG; },
+  get conflicts() { return I18N_CONFLICTS.slice(); },
+  name: i18nName,
+  t: i18nTranslate,
+  translate: i18nTranslate,
+  setLang: i18nSetLang,
+  localize: i18nLocalizeAll,
+  localizeSubtree: i18nLocalizeSubtree,
+  applyBlocks: i18nApplyBlocks,
+  nodeInfo: n => { const r=I18N_TEXT_RECS.get(n); return r?{src:r.src,outs:r.outs}:null; },
+  skipped: i18nSkipped,
+  hidden: () => { const el=document.querySelector('#stats'); return el?el.offsetParent===null:null; },
+  match: src => I18N_RULES.map((r,i)=>({i,re:String(r.re),m:r.re.exec(src)})).filter(x=>x.m).map(x=>({i:x.i,re:x.re,m:x.m.slice(0,5)})),
+  ruleOut: (i,src) => { const r=I18N_RULES[i]; const m=r.re.exec(src); if(!m) return null; try { return String(r[I18N_LANG](m)); } catch(e) { return 'ERR '+e; } },
+  init: i18nInit,
+  scan: i18nScanUntranslated,
+  tour: i18nTourSteps,
+  tourStep(title, body) {
+    for (const s of I18N_TOUR) {
+      if (s.title.tr === title && s.body.tr === body) {
+        return {
+          title: s.title[I18N_LANG] != null ? s.title[I18N_LANG] : s.title.en,
+          body: s.body[I18N_LANG] != null ? s.body[I18N_LANG] : s.body.en
+        };
+      }
+    }
+    return { title: i18nTranslate(title), body: i18nTranslate(body) };
+  },
+  get missing() { return Array.from(I18N_MISSING.entries()).map(([text, count]) => ({ text, count })); }
+};
+
+/* ===================== UI chrome & static labels ===================== */
+add('Krallıklar Simülasyonu', 'Kingdoms Simulation', '王国模拟');
+add('Bilim', 'Science', '科技');
+add('⚙ Bilim', '⚙ Science', '⚙ 科技');
+add('◈ Kültür', '◈ Culture', '◈ 文化');
+add('Tarih', 'History', '历史');
+add('📜 Tarih', '📜 History', '📜 历史');
+add('Birey', 'Person', '个体');
+add('Hikâye', 'Story', '故事');
+add('Krallık', 'Kingdom', '王国');
+add('Danışman', 'Advisor', '顾问');
+add('Atla', 'Skip', '跳过');
+add('Sonraki', 'Next', '下一步');
+add('Başla', 'Start', '开始');
+add('Dil', 'Language', '语言');
+
+/* ===================== Empty states & small actions ===================== */
+add('Haritada bir figüre tıkla, Kişiler sekmesinden birini seç ya da 🎲 ilginç bir kişi göster.',
+  'Click a figure on the map, pick someone from the People tab, or show a 🎲 random interesting person.',
+  '点击地图上的人物，从「人物」标签中选择一人，或随机展示一位 🎲 有趣人物。');
+add('🎲 ilginç birey', '🎲 interesting individual', '🎲 有趣个体');
+add('İzleme listesinde', 'On watch list', '已在关注列表');
+add('†', '†', '†');
+add('—', '—', '—');
+add('?', '?', '?');
+add('…', '…', '…');
+
+/* ===================== Yearly summary ===================== */
+add('+d', '+b', '+生');
+add('−ö', '−d', '−死');
+add('♥', '♥', '♥');
+add('⚔', '⚔', '⚔');
+add('⚑', '⚑', '⚑');
+add('♛', '♛', '♛');
+add('☠', '☠', '☠');
+add('evlilik', 'marriage', '婚姻');
+
+/* ===================== Simulation terms ===================== */
+/* roles */
+add('çiftçi', 'farmer', '农民');
+add('asker', 'soldier', '士兵');
+add('hekim', 'physician', '医师');
+add('casus', 'spy', '间谍');
+add('zanaatkâr', 'artisan', '工匠');
+add('rahip', 'priest', '祭司');
+add('isyancı', 'rebel', '叛乱者');
+add('kral', 'king', '国王');
+add('ordu', 'army', '军队');
+add('halk', 'people', '民众');
+add('hazine', 'treasury', '国库');
+add('inanç puanı', 'faith points', '信仰点');
+add('güven', 'trust', '信任');
+add('veraset', 'succession', '继承');
+add('isyan', 'rebellion', '叛乱');
+add('barış', 'peace', '和平');
+add('salgın', 'epidemic', '瘟疫');
+add('hasat', 'harvest', '收成');
+add('kuraklık', 'drought', '干旱');
+add('göç', 'migration', '迁徙');
+add('düşman', 'enemy', '敌人');
+add('husumet', 'feud', '仇恨');
+add('çöktü', 'collapsed', '崩溃');
+add('yıldırım', 'lightning', '闪电');
+add('şifa', 'healing', '治愈');
+add('ilham', 'inspiration', '启迪');
+add('yağmur', 'rain', '降雨');
+add('alamet', 'omen', '征兆');
+add('savaşçı', 'warrior', '战士');
+add('tüccar', 'merchant', '商人');
+add('dindar', 'devout', '虔诚');
+add('nizamcı', 'orderly', '秩序');
+add('ünsever', 'renown-seeker', '慕名');
+add('çok-kültürlü', 'multicultural', '多元文化');
+
+/* stages, eras, seasons, terrain */
+add('Tarih Öncesi', 'Prehistory', '史前时代');
+add('İlk Çağ', 'Ancient Era', '上古时代');
+add('Orta Çağ', 'Middle Ages', '中世纪');
+add('Yeni Çağ', 'Early Modern Era', '近代');
+add('Yakın Çağ', 'Modern Era', '现代');
+add('Bahar', 'Spring', '春');
+add('Yaz', 'Summer', '夏');
+add('Sonbahar', 'Autumn', '秋');
+add('arazi', 'terrain', '地形');
+add('yiyecek', 'food', '食物');
+add('ilişki', 'relations', '关系');
+add('siyasi', 'political', '政治');
+
+/* actions */
+add('işinin başında', 'at work', '在岗位上');
+
+/* goals */
+
+/* mood */
+add('ruh hâli', 'mood', '心情');
+
+/* Big Five & values */
+
+/* memories */
+add('anılar', 'memories', '记忆');
+
+/* legend titles */
+add('Hükümdar', 'Ruler', '统治者');
+
+/* growth ranks */
+
+/* death causes */
+add('savaşta can verdi', 'fell in battle', '战死沙场');
+add('fetih sırasında can verdi', 'fell during the conquest', '死于征服之战');
+add('kuruluş neslinden', 'from the founding generation', '来自建国家族');
+
+/* war reasons */
+add('ihanet', 'betrayal', '背叛');
+add('uzun süren entrika', 'long-running intrigue', '长期阴谋');
+add('sınır gerginliği', 'border tension', '边境紧张');
+add('zengin ambarlara göz dikmek', 'coveting rich granaries', '觊觎富饶粮仓');
+add('hırslı hükümdar ve güçlü ordu', 'an ambitious ruler and a strong army', '野心勃勃的统治者与强大军队');
+add('eski husumet', 'an old feud', '旧日仇恨');
+add('iç huzursuzluğunu dışarıya çevirmek', 'turning internal unrest outward', '将内乱转向外敌');
+add('toprak ve itibar arayışı', 'seeking land and prestige', '追求土地与威望');
+add('barış anlaşması', 'peace treaty', '和平条约');
+add('bir taraf yıkıldı', 'one side collapsed', '一方崩溃');
+
+add('miras', 'inheritance', '继承');
+
+add('siyaset', 'politics', '政治');
+add('aile', 'family', '家庭');
+add('doğa', 'nature', '自然');
+add('diğer', 'other', '其他');
+
+/* ===================== Inspector & people panels ===================== */
+add('ŞU AN', 'RIGHT NOW', '此刻');
+add('Neden?', 'Why?', '为什么？');
+add('Karar puanları', 'Decision scores', '决策评分');
+add('En yüksek puan (±0,12 içindekiler arasından rastgele) seçilir.', 'The highest score is chosen (at random among those within ±0.12).', '选择最高分（在 ±0.12 范围内随机挑选）。');
+add('ebeveyn', 'parents', '父母');
+add('eş', 'spouse', '配偶');
+add('çocuklar', 'children', '子女');
+add('dostlar', 'friends', '朋友');
+add('hasımlar', 'rivals', '仇敌');
+add('hedef', 'goal', '目标');
+add('hedef:', 'goal:', '目标：');
+add('nesil', 'generation', '代');
+add('zafer', 'victories', '胜利');
+add('öldü', 'died', '死亡');
+add('öldü.', 'died.', '死亡。');
+add('doğdu', 'was born', '出生');
+add('devirdi', 'defeated', '击败');
+add('devirip intikamını aldı', 'defeated and took revenge', '击败并复仇');
+add('intikam almaya yemin etti', 'swore to take revenge', '发誓复仇');
+add('halkına katıldı', 'joined the people of', '加入了……的民众');
+add('krallığına göç etti', 'migrated to the kingdom of', '迁徙至……的王国');
+add('eski krallık düştü', 'old kingdoms have fallen', '旧王国已灭亡');
+add('eski krallık düştü.', 'old kingdom fell', '旧王国灭亡了');
+add('yorgunluk', 'weariness', '厌战');
+
+/* People tab */
+add('tüm krallıklar', 'all kingdoms', '全部王国');
+add('tüm meslekler', 'all professions', '全部职业');
+add('kişi kaydı', 'person records', '人物记录');
+add('(en ilginç 80)', '(top 80 most interesting)', '（最有趣的 80 位）');
+add('(en önemli 150)', '(top 150 most important)', '（最重要的 150 位）');
+add('ilginç birey', 'interesting individual', '有趣个体');
+add('Yaşayan', 'Living', '在世');
+add('Ölmüş', 'Dead', '已故');
+
+/* Stats panel */
+add('toprak', 'land', '领土');
+add('☠ kıtlık', '☠ famine', '☠ 饥荒');
+add('⚑ huzursuz', '⚑ unrest', '⚑ 动荡');
+add('✚ salgın', '✚ epidemic', '✚ 瘟疫');
+add('geçen yıl açlıktan ölüm ya da boş ambar', 'deaths from hunger last year or an empty granary', '去年有人饿死或粮仓已空');
+add('isyana eğilimli yetişkinlerin oranı', 'share of adults inclined to rebel', '有叛乱倾向的成年人比例');
+add('salgın sürüyor', 'epidemic ongoing', '瘟疫仍在持续');
+add('ambar', 'granary', '粮仓');
+add('surlar', 'walls', '城墙');
+add('tarlalar', 'fields', '田地');
+add('tarlalar dinleniyor', 'fields resting', '田地休耕');
+add('ekim:', 'sowing:', '播种：');
+add('filizleniyor:', 'sprouting:', '发芽：');
+add('ekili', 'sown', '已播种');
+add('hasat bekleyen:', 'awaiting harvest:', '待收割：');
+add('tarihi', 'history', '历史');
+add('BAŞKENT', 'CAPITAL', '首都');
+add('ŞEHİR', 'CITY', '城市');
+
+/* Map modes & legend */
+add('Siyasi', 'Political', '政治');
+add('İlişki', 'Relations', '关系');
+add('Krallık sınırları', 'Kingdom borders', '王国边界');
+add('Yalnızca arazi', 'Terrain only', '仅地形');
+add('Toprak verimi ve ambarlar', 'Soil fertility and granaries', '土地肥力与粮仓');
+add('Huzursuzluk haritası (kırmızı = isyana yakın)', 'Unrest map (red = close to rebellion)', '动荡地图（红色 = 濒临叛乱）');
+add('İttifak, ticaret, savaş çizgileri', 'Alliance, trade and war lines', '联盟、贸易与战争连线');
+add('Arazi', 'Terrain', '地形');
+add('Huzur', 'Contentment', '安定');
+add('İlişkiler', 'Relations', '关系');
+add('verimsiz', 'poor soil', '贫瘠');
+add('verimli toprak', 'fertile soil', '肥沃土地');
+add('ambar dolu', 'granary full', '粮仓充盈');
+add('boş (şehir üstünde)', 'empty (over city)', '空（城市上方）');
+add('ova · orman · tepe · dağ · nehir', 'plains · forest · hills · mountains · river', '平原 · 森林 · 丘陵 · 山地 · 河流');
+add('sınırlar kapalı; yalnızca coğrafya', 'borders off; geography only', '关闭边界；仅显示地理');
+add('huzurlu', 'content', '安定');
+add('isyana yakın', 'near rebellion', '濒临叛乱');
+add('savaş · ittifak · ticaret', 'war · alliance · trade', '战争 · 联盟 · 贸易');
+add('dostluk · gerginlik', 'friendship · tension', '友谊 · 紧张');
+
+/* Watch bar */
+add('İzleme listesi boş: bir kişinin kartında ☆ ile ekle (en çok 8); başına olay gelince bildirim çıkar.',
+  'Watch list is empty: add someone with ☆ on their card (up to 8); you will be notified when something happens to them.',
+  '关注列表为空：在人物卡片上点 ☆ 添加（最多 8 人）；他们遇到事件时会通知你。');
+add('İzleme listesine ekle', 'Add to watch list', '加入关注列表');
+
+/* Pyramid & metrics */
+add('yaş', 'age', '年龄');
+add('geçen yıl', 'last year', '去年');
+add('doğum', 'birth', '出生');
+add('ölüm', 'death', '死亡');
+add('Ölçümler 20. yıldan sonra anlamlı hale gelir.', 'Measurements become meaningful after year 20.', '第 20 年之后指标才有意义。');
+add('doğumda beklenen ömür', 'life expectancy at birth', '出生时预期寿命');
+add('hedef 28-38', 'target 28–38', '目标 28–38');
+add('15 yaşa ulaşan', 'surviving to age 15', '活到 15 岁');
+add('hedef %50-70', 'target 50–70%', '目标 50–70%');
+add('doğurganlık (çocuk/kadın)', 'fertility (children/woman)', '生育率（子女/女性）');
+add('hedef 4-7', 'target 4–7', '目标 4–7');
+add('ölüm: hastalık/yaşlılık', 'deaths: illness/old age', '死亡：疾病/年老');
+add('ölüm: açlık', 'deaths: hunger', '死亡：饥饿');
+add('ölüm: savaş/şiddet', 'deaths: war/violence', '死亡：战争/暴力');
+add('hedef %4-25', 'target 4–25%', '目标 4–25%');
+add('ölüm: doğum', 'deaths: childbirth', '死亡：分娩');
+add('Son 40 yıl. Hedef aralıklar kaynaklardan gelen geniş tahminlerdir, kesin değer değildir (docs/SOURCES.md).',
+  'Last 40 years. Target ranges are broad estimates from the sources, not exact values (docs/SOURCES.md).',
+  '最近 40 年。目标区间是来源中的宽泛估计，并非精确值（docs/SOURCES.md）。');
+
+/* God panel */
+add('Bir güç seç, sonra haritada hedefe tıkla (Esc iptal). Yılda +4 puan. Shift+tık: yiyecek yağdır (bedava).',
+  'Choose a power, then click a target on the map (Esc cancels). +4 points per year. Shift+click: rain food (free).',
+  '选择一种神力，然后点击地图目标（Esc 取消）。每年 +4 点。Shift+点击：降下食物（免费）。');
+add('🌧 Yağmur', '🌧 Rain', '🌧 降雨');
+add('✚ Şifa', '✚ Healing', '✚ 治愈');
+add('✨ İlham', '✨ Inspiration', '✨ 启迪');
+add('⚡ Yıldırım', '⚡ Lightning', '⚡ 闪电');
+add('🌋 Deprem', '🌋 Earthquake', '🌋 地震');
+add('☠ Salgın', '☠ Epidemic', '☠ 瘟疫');
+add('Tıklanan yerde yiyecek yağar; kuraklık sürüyorsa biter', 'Food rains on the target; ends a drought if one is active', '目标地点降下食物；若正在干旱则结束干旱');
+add('Yakındakilerin enerjisi dolar; bölgedeki salgın söner', 'Nearby people are restored; a local epidemic ends', '附近的人恢复精力；当地瘟疫结束');
+add('Bölgedeki krallığın araştırması hızlanır, halkın moral ve meşruiyeti artar', 'The local kingdom researches faster; morale and legitimacy rise', '当地王国的研究加速，民众士气与合法性提升');
+add('Tıklanan kişiyi (en yakın) çarpar. Hükümdarı çarparsan tahta geçiş olur', 'Strikes the nearest person. Striking the ruler triggers succession', '击中最近的人。若击中统治者会触发继承');
+add('Bölgedeki şehirlerin surları çöker, insanlar yaralanır', 'Walls of nearby cities collapse; people are injured', '附近城市的城墙崩塌，民众受伤');
+add('Bölgedeki krallıkta salgın başlatır', 'Starts an epidemic in the local kingdom', '在当地王国引发瘟疫');
+add('Yeterli inanç puanın yok', 'You do not have enough faith points', '信仰点不足');
+add('Yakında kimse yok: bir kişinin üstüne tıkla', 'Nobody is nearby: click on a person', '附近无人：请点击一个人');
+add('Bir krallığın toprağına tıkla', 'Click inside a kingdom’s territory', '请点击王国领土');
+add('Burada şehir ya da insan yok: puan harcanmadı', 'No city or person here: no points spent', '此处没有城市或人：未消耗点数');
+add('Burada kimse yok: puan harcanmadı', 'Nobody here: no points spent', '此处无人：未消耗点数');
+add('Kuraklık sona erdi, yağmurlar döndü', 'The drought ended; the rains returned', '干旱结束，雨水回归');
+add('kuraklık bitti, yiyecek yağdı', 'drought ended, food rained down', '干旱结束，食物降下');
+add('yiyecek yağdı', 'food rained down', '食物降下');
+add('kuraklık bitti', 'drought ended', '干旱结束');
+add('ilham aldı', 'received inspiration', '获得启迪');
+add('salgına yakalandı', 'was struck by an epidemic', '遭遇瘟疫');
+add('şehir hasar gördü', 'cities damaged', '座城市受损');
+add('kişi öldü', 'people died', '人死亡');
+add('kişi iyileşti', 'people healed', '人痊愈');
+add('ölü', 'dead', '死亡');
+add('yıldırımla öldü', 'was struck by lightning', '被闪电击中身亡');
+
+/* ===================== Legends / history overlay ===================== */
+add('Dünya', 'World', '世界');
+add('Kişiler', 'People', '人物');
+add('Krallıklar', 'Kingdoms', '王国');
+add('Krallıkların nüfusu', 'Population of the kingdoms', '王国人口');
+add('Dönüm noktaları', 'Turning points', '转折点');
+add('yaşayan krallık', 'living kingdoms', '现存王国');
+add('toplam', 'total', '总计');
+add('yaşayan nüfus', 'living population', '现存人口');
+add('Soldan bir kişi seç. Ölenler de burada tutulur (†).', 'Select a person on the left. The dead are kept here too (†).', '从左侧选择一个人。逝者也会保留在这里（†）。');
+add('Soldan bir krallık seç.', 'Select a kingdom on the left.', '从左侧选择一个王国。');
+add('Henüz savaş yok.', 'No wars yet.', '暂无战争。');
+add('Soldan bir savaş seç: gerekçe, süre, kayıplar, sonuç ve olay geçmişi.',
+  'Select a war on the left: cause, duration, losses, outcome and event history.',
+  '从左侧选择一场战争：起因、时长、损失、结果与事件记录。');
+add('Henüz efsane doğmadı. Tarih yazılmayı bekliyor.', 'No legend has been born yet. History waits to be written.', '传奇尚未诞生。历史正等待被书写。');
+add('Henüz yeterli veri yok.', 'Not enough data yet.', '数据尚不充足。');
+add('Henüz efsane doğmadı; şimdilik öne çıkanlar:', 'No legend yet; for now, the notable figures:', '尚无传奇；以下是目前最突出的人物：');
+add('olaylar', 'events', '事件');
+add('Hepsi', 'All', '全部');
+add('Savaş', 'War', '战争');
+add('Siyaset', 'Politics', '政治');
+add('Doğa', 'Nature', '自然');
+add('Kültür', 'Culture', '文化');
+add('Hükümdarlık', 'Reign', '统治');
+add('Aile', 'Family', '家庭');
+add('Yaşam çizgisi', 'Timeline', '人生轨迹');
+add('Nüfus', 'Population', '人口');
+add('Hükümdarlar', 'Rulers', '统治者');
+add('Şehirler', 'Cities', '城市');
+add('Savaşlar', 'Wars', '战争');
+add('Olaylar', 'Events', '事件');
+add('Gerekçe ve taraflar', 'Cause and sides', '起因与双方');
+add('Kayıplar ve sonuç', 'Losses and outcome', '损失与结果');
+add('ihanetle başladı', 'began with betrayal', '以背叛开始');
+add('yıkıldı (Y', 'collapsed (Y', '灭亡（Y');
+add('kuruluş Y', 'founded Y', '建立于 Y');
+add('krallığından ayrıldı', 'split from the kingdom', '脱离王国');
+add('yaşıyor ·', 'alive ·', '在世 ·');
+add('yaşında', 'years old', '岁');
+add('doğumlu', 'born', '出生');
+add('ölüm:', 'death:', '死亡：');
+add('katili', 'killer', '凶手');
+add('Haritada takip et', 'Follow on map', '在地图上跟随');
+add('Bu kişinin kaydı artık tutulmuyor.', 'This person’s record is no longer kept.', '此人的记录已不再保存。');
+add('kuruluştan önce doğdu', 'born before the founding', '建国前出生');
+add('Ölenler de burada tutulur', 'The dead are kept here too', '逝者也保留在这里');
+add('isim ara…', 'search by name…', '搜索姓名…');
+add('olaylarda ara…', 'search events…', '搜索事件…');
+add('olay', 'events', '事件');
+add('kayıt', 'records', '记录');
+add('efsane', 'legends', '传奇');
+add('yıl', 'year', '年份');
+add('Danışman modu.', 'Advisor mode.', '顾问模式。');
+add('Hedefin', 'Your goal is', '你的目标是');
+add('Birkaç yılda bir hükümdar sana bir ikilem getirir; tavsiyen, hükümdarın', 'Every few years the ruler brings you a dilemma; your advice is followed according to the ruler’s', '每隔几年，统治者会带来一个难题；你的建议会依据统治者的');
+add('Bir krallığın saray danışmanı olursun.', 'You become the court advisor of a kingdom.', '你成为一个王国的宫廷顾问。');
+add('nüfus, şehir, toprak ve buluşlarla krallığı Beylikten İmparatorluğa taşı.', 'grow the kingdom from a Chiefdom to an Empire through population, cities, land and discoveries.', '通过人口、城市、领土与发现，将王国从酋邦发展为帝国。');
+add('5 yıl sonra büyüme', 'growth after 5 years', '5 年后的成长');
+add('5 yıl sonra büyümeye bakılacak (şimdi', 'growth will be checked after 5 years (now', '将在 5 年后查看成长（当前');
+add('şans ~%', 'chance ~', '概率约 ');
+add('hazine yetersiz (', 'not enough treasury (', '国库不足（');
+add('hazine −', 'treasury −', '国库 −');
+add('hazine +', 'treasury +', '国库 +');
+add('meşruiyet +', 'legitimacy +', '合法性 +');
+add('meşruiyet −', 'legitimacy −', '合法性 −');
+add('araştırma +', 'research +', '研究 +');
+add('doğurganlık +', 'fertility +', '生育率 +');
+add('taşıma kapasitesi +', 'carrying capacity +', '承载能力 +');
+add('asker gücü ×', 'soldier strength ×', '士兵力量 ×');
+add('hasat +', 'harvest +', '收成 +');
+add('savunma ×', 'defense ×', '防御 ×');
+add('ticaret geliri ×', 'trade income ×', '贸易收入 ×');
+add('araştırma ×', 'research ×', '研究 ×');
+add('her şehre +10', '+10 per city', '每座城市 +10');
+
+/* ===================== Tech & culture trees ===================== */
+add('Tarım', 'Agriculture', '农业');
+add('Avcılık', 'Hunting', '狩猎');
+add('Çömlekçilik', 'Pottery', '制陶');
+add('Yazı', 'Writing', '文字');
+add('Bronz', 'Bronze', '青铜');
+add('Taş İşçiliği', 'Stonework', '石工');
+add('Tekerlek', 'The Wheel', '车轮');
+add('Sulama', 'Irrigation', '灌溉');
+add('Para', 'Currency', '货币');
+add('Matematik', 'Mathematics', '数学');
+add('İnşaat', 'Construction', '建筑');
+add('Demir', 'Iron', '铁器');
+add('Kanunlar', 'Laws', '法律');
+add('Tıp', 'Medicine', '医学');
+add('Şövalyelik', 'Chivalry', '骑士精神');
+add('Eğitim', 'Education', '教育');
+add('Bürokrasi', 'Bureaucracy', '官僚制');
+add('Kaleler', 'Castles', '城堡');
+add('Barut', 'Gunpowder', '火药');
+add('Matbaa', 'Printing', '印刷术');
+add('Bankacılık', 'Banking', '银行业');
+add('Pusula', 'Compass', '指南针');
+
+add('Kabile Gelenekleri', 'Tribal Traditions', '部落传统');
+add('Savaşçı Onuru', 'Warrior Honor', '战士荣誉');
+add('Fetih Ülküsü', 'Conquest Ideal', '征服理想');
+add('Kahramanlık Destanları', 'Heroic Sagas', '英雄史诗');
+add('Pazar Hakları', 'Market Rights', '市场权利');
+add('Lonca Sistemi', 'Guild System', '行会制度');
+add('Tüccar Prensleri', 'Merchant Princes', '商人王侯');
+add('Atalar Kültü', 'Ancestor Cult', '祖先崇拜');
+add('Tapınaklar', 'Temples', '神庙');
+add('Kutsal Düzen', 'Sacred Order', '神圣秩序');
+add('Töre', 'Customary Law', '习惯法');
+add('Meclis', 'Assembly', '议事会');
+add('Şölenler', 'Feasts', '盛宴');
+add('Ozanlar', 'Bards', '吟游诗人');
+
+add('savunma', 'defense', '防御');
+add('tarım', 'agriculture', '农业');
+add('bilim', 'science', '科技');
+add('düzen', 'order', '秩序');
+add('huzur', 'contentment', '安定');
+add('meşruiyet', 'legitimacy', '合法性');
+add('Çağ', 'Era', '时代');
+add('buluş', 'discovery', '发现');
+add('gelenek', 'tradition', '传统');
+add('yenilikçilik', 'innovation', '创新');
+add('araştırma', 'research', '研究');
+add('Kültürel kimlik', 'Cultural identity', '文化认同');
+add('henüz belirsiz', 'not yet defined', '尚未确定');
+add('kültür', 'culture', '文化');
+add('Savaşçı', 'Warrior', '战士');
+add('Tüccar', 'Merchant', '商人');
+add('Dindar', 'Devout', '虔诚');
+add('Nizamcı', 'Orderly', '秩序');
+add('Ünsever', 'Renown-seeker', '慕名');
+add('Çok-kültürlü', 'Multicultural', '多元文化');
+
+/* Tails for tech discoveries */
+add('ilk tohumlar yağmurlu bir bahara ekildi', 'the first seeds were sown in a rainy spring', '最初的种子在春雨中播下');
+add('yeni yaylar ve tuzaklar sürüleri daralttı', 'new bows and traps thinned the herds', '新弓与陷阱减少了兽群');
+add('çömlekler ambarların dolmasına yardım etti', 'pottery helped fill the granaries', '陶器帮助充实了粮仓');
+add('katipler ilk kayıtları kil levhalara geçirdi', 'scribes pressed the first records into clay tablets', '书吏将最初的记录刻上泥板');
+add('ocaklar gece gündüz yandı', 'the furnaces burned day and night', '炉火日夜不熄');
+add('ustalar taşı kesmeyi öğrendi', 'the masters learned to cut stone', '工匠学会了切割石头');
+add('ilk arabalar çamurda saplandı ama yol açıldı', 'the first carts stuck in the mud, but a road was opened', '最初的车辆陷入泥中，但道路由此开辟');
+add('kanallar çorak toprağı yeşertti', 'canals greened the barren soil', '水渠让荒地变绿');
+add('pazarlarda takas yerini sikkeye bıraktı', 'barter in the markets gave way to coin', '集市上的以物易物让位于钱币');
+add('ölçüler ve hesaplar ilk kez yazıya döküldü', 'measures and calculations were written down for the first time', '度量与计算首次被记录下来');
+add('tapınak ve surlar daha yükseğe çıktı', 'temples and walls rose higher', '神庙与城墙建得更高');
+add('demirciler kılıçları yeniden döktü', 'smiths recast the swords', '铁匠重铸了刀剑');
+add('kadılar aynı kuralı herkese uygulamaya başladı', 'judges began applying the same rule to everyone', '法官开始对所有人适用同一规则');
+add('şifacılar bitkileri yazıya geçirdi', 'healers wrote down the plants', '医师记录了草药');
+add('zırhlı atlılar meydanda yemin etti', 'armored riders swore an oath in the square', '披甲骑士在广场宣誓');
+add('ilk medrese kapılarını açtı', 'the first academy opened its doors', '第一所学院开门');
+add('katipler vergi defterlerini çoğalttı', 'scribes multiplied the tax ledgers', '书吏增制了税册');
+add('taş burçlar sınırlara dikildi', 'stone towers rose along the borders', '石塔沿边境矗立');
+add('ilk toplar surlarda gürledi', 'the first cannons thundered at the walls', '最初的炮火在城墙轰鸣');
+add('kitaplar elle yazılmaktan kurtuldu', 'books were freed from hand-copying', '书籍摆脱了手抄');
+add('sarraflar kredi vermeye başladı', 'money changers began to lend credit', '钱庄开始放贷');
+add('gemiciler ufkun ötesine cesaret etti', 'sailors dared beyond the horizon', '水手敢于驶向地平线之外');
+
+/* Culture tails */
+add('ihtiyarlar kabile ateşinin etrafında toplandı', 'the elders gathered around the tribal fire', '长老们聚集在部落篝火旁');
+add('gençler silah taşımayı onur saydı', 'the young counted bearing arms as an honor', '年轻人以佩武器为荣');
+add('komutanlar yeni sınırların hayalini kurdu', 'commanders dreamed of new borders', '将领们梦想着新的疆界');
+add('ozanlar eski zaferleri yeniden anlattı', 'bards retold old victories', '吟游诗人重述往昔胜利');
+add('tüccarlar pazar yerinde koruma altına alındı', 'merchants were granted protection in the marketplace', '商人在集市获得保护');
+add('ustalar loncalarda birleşti', 'the masters united in guilds', '工匠联合成行会');
+add('zengin tüccarlar sarayın sofrasına oturdu', 'rich merchants took seats at the palace table', '富商坐上了宫廷餐桌');
+add('mezarlıklar adak yeri oldu', 'graveyards became places of offering', '墓地成为献祭之地');
+add('taş tapınaklar köylerin merkezi oldu', 'stone temples became the center of villages', '石制神庙成为村庄中心');
+add('rahipler günleri ve ayinleri düzene soktu', 'priests ordered the days and rites', '祭司规范了节期与仪式');
+add('töreyi bilenler ihtilafları çözdü', 'those who knew the custom settled disputes', '通晓习俗者调解纷争');
+add('ileri gelenler ilk kez toplantı yaptı', 'the notables met for the first time', '显贵们首次集会');
+add('şölenler her mevsim başına eklendi', 'feasts were added to the start of every season', '每个季节之初都设盛宴');
+add('ozanlar köy köy dolaştı', 'bards traveled from village to village', '吟游诗人走遍村庄');
+
+/* ===================== Advisor cards ===================== */
+addBlock('advisorIntro',
+  '<b>Danışman modu.</b> Bir krallığın saray danışmanı olursun. Hedefin <b>büyüme</b>: nüfus, şehir, toprak ve buluşlarla krallığı Beylikten İmparatorluğa taşı. Birkaç yılda bir hükümdar sana bir ikilem getirir; tavsiyen, hükümdarın <b>güvenine</b> göre dinlenir. Kötü tavsiye güveni düşürür.',
+  '<b>Advisor mode.</b> You become the court advisor of a kingdom. Your goal is <b>growth</b>: raise the kingdom from a Chiefdom to an Empire through population, cities, land and discoveries. Every few years the ruler brings you a dilemma; your advice is followed according to the ruler’s <b>trust</b>. Bad advice lowers trust.',
+  '<b>顾问模式。</b>你成为一个王国的宫廷顾问。你的目标是<b>成长</b>：通过人口、城市、领土与发现，将王国从酋邦发展为帝国。每隔几年，统治者会带来一个难题；你的建议会依据统治者的<b>信任</b>被采纳。糟糕的建议会降低信任。');
+add('🎩 Danışman ol', '🎩 Become advisor', '🎩 成为顾问');
+add('güvenine', 'trust', '信任');
+add('Savaş sürüyor', 'The war continues', '战争仍在继续');
+add('Hükümdar savaş istiyor', 'The ruler wants war', '统治者想要战争');
+add('Verimsiz tarlalar', 'Barren fields', '贫瘠的田地');
+add('Nüfusu artırmak', 'Growing the population', '增加人口');
+add('Kervancı geldi', 'A caravan arrived', '商队到来');
+add('Âlimlerin talebi', 'The scholars’ request', '学者的请求');
+add('Komşu zayıf düştü', 'A neighbor has weakened', '邻国衰弱了');
+add('Güçlü komşu tehdidi', 'A strong neighbor threatens', '强邻威胁');
+add('Hazine ve vergi', 'Treasury and taxes', '国库与税收');
+add('Kıtlık tehdidi', 'Threat of famine', '饥荒威胁');
+add('Salgın', 'Epidemic', '瘟疫');
+add('İsyan fısıltıları', 'Whispers of rebellion', '叛乱的耳语');
+add('Yeni şehir fırsatı', 'Opportunity for a new city', '新建城市的机会');
+add('Göçmen kafilesi', 'A group of migrants', '移民队伍');
+add('Hazine taşıyor', 'The treasury overflows', '国库充盈');
+add('Hükümdar yaşlanıyor', 'The ruler is aging', '统治者正在老去');
+
+add('Barış elçisi gönder', 'Send a peace envoy', '派遣和平使节');
+add('Orduyu besle, savaşı sürdür', 'Feed the army, continue the war', '供养军队，继续战争');
+add('Müttefik ara', 'Seek an ally', '寻找盟友');
+add('Savaşa onay ver', 'Approve the war', '批准战争');
+add('Ordu hazırlığı yap, bekle', 'Prepare the army and wait', '整军备战，等待时机');
+add('Elçi gönder, vazgeçir', 'Send an envoy to dissuade', '派使节劝阻');
+add('Sulama kanalı kazdır', 'Dig irrigation canals', '开凿灌溉渠');
+add('Yeni toprağa şehir kur', 'Found a city on new land', '在新土地上建城');
+add('Şimdilik beklesin', 'Wait for now', '暂时等待');
+add('Büyük evlilik şenliği', 'Grand marriage festival', '盛大的婚礼庆典');
+add('Göçmenlere toprak vaat et', 'Promise land to migrants', '向移民许诺土地');
+add('Vergiyi hafiflet', 'Lighten taxes', '减轻赋税');
+add('Ticaret anlaşması öner', 'Propose a trade agreement', '提议贸易协定');
+add('Gümrük vergisi koy', 'Impose customs duties', '征收关税');
+add('Kervancıyı geri çevir', 'Turn the caravan away', '拒绝商队');
+add('Kütüphane ve medrese kur', 'Found a library and academy', '建立图书馆与学院');
+add('Usta zanaatkârları ödüllendir', 'Reward master artisans', '奖励工匠大师');
+add('Ödenek ayırma', 'Allocate no funds', '不拨款项');
+add('Savaş aç', 'Declare war', '宣战');
+add('Evlilik ittifakı öner', 'Propose a marriage alliance', '提议联姻联盟');
+add('Beklesin', 'Wait', '等待');
+add('Surları güçlendir', 'Strengthen the walls', '加固城墙');
+add('Haraç gönder', 'Send tribute', '送去贡品');
+add('Üçüncü bir ittifak ara', 'Seek a third alliance', '寻求第三方的联盟');
+add('Ağır vergi', 'Heavy taxes', '重税');
+add('Hafif vergi', 'Light taxes', '轻税');
+add('Lonca ve ticaret vergisi', 'Guild and trade tax', '行会与贸易税');
+add('Hazineden tahıl satın al', 'Buy grain from the treasury', '从国库购买粮食');
+add('Tahıl toplama seferi', 'Grain collection campaign', '征收粮食行动');
+add('Dua günü ilan et', 'Declare a day of prayer', '宣布祈祷日');
+add('Karantina uygula', 'Impose quarantine', '实施隔离');
+add('Şifacıları ödüllendir', 'Reward the healers', '奖励医师');
+add('Ayin ve dua', 'Rites and prayers', '仪式与祈祷');
+add('Sertçe bastır', 'Suppress harshly', '严厉镇压');
+add('Reform ilan et', 'Announce reforms', '宣布改革');
+add('Halk şöleni ver', 'Hold a public feast', '举办民众盛宴');
+add('Yeni şehir kur', 'Found a new city', '建立新城市');
+add('Mevcut şehirleri güçlendir', 'Strengthen existing cities', '加固现有城市');
+add('Hazineyi sakla', 'Keep the treasury', '保留国库');
+add('Hepsini kabul et', 'Accept them all', '全部接纳');
+add('Yalnız ustaları al', 'Take only the masters', '只接收工匠大师');
+add('Geri çevir', 'Turn them away', '遣返');
+add('Şehirlere yatırım yap', 'Invest in the cities', '投资城市');
+add('Orduyu büyüt', 'Expand the army', '扩充军队');
+add('Bilim ödeneği', 'Science funding', '科研拨款');
+add('Varisi iyi yetiştir', 'Raise the heir well', '好好培养继承人');
+add('Saray evliliği ayarla', 'Arrange a palace marriage', '安排宫廷联姻');
+add('Kendi haline bırak', 'Leave it be', '顺其自然');
+
+/* Hints */
+add('barış şansı (yorgunluğa bağlı) · hazine −15', 'chance of peace (depends on weariness) · treasury −15', '和平概率（取决于厌战度）· 国库 −15');
+add('asker gücü ×1,3 (12 yıl) · hazine −30', 'soldier strength ×1.3 (12 years) · treasury −30', '士兵力量 ×1.3（12 年）· 国库 −30');
+add('toprak kazanma şansı · yorgunluk, itibar kaybı', 'chance to gain land · weariness, loss of reputation', '获得土地的概率 · 厌战、声誉损失');
+add('asker gücü ×1,2 (8 yıl) · hazine −20 · savaş ertelenir', 'soldier strength ×1.2 (8 years) · treasury −20 · war postponed', '士兵力量 ×1.2（8 年）· 国库 −20 · 战争推迟');
+add('gerginlik azalır, 3 yıl ateşkes · hazine −10', 'tension falls, 3-year truce · treasury −10', '紧张降低，3 年停战 · 国库 −10');
+add('hasat +%50, taşıma kapasitesi +%25 (15 yıl) · hazine −25', 'harvest +50%, carrying capacity +25% (15 years) · treasury −25', '收成 +50%，承载能力 +25%（15 年）· 国库 −25');
+add('yeni şehir · hazine −30', 'new city · treasury −30', '新城市 · 国库 −30');
+add('maliyet yok', 'no cost', '无成本');
+add('doğurganlık +%70 (10 yıl) · hazine −15', 'fertility +70% (10 years) · treasury −15', '生育率 +70%（10 年）· 国库 −15');
+add('12 yetişkin göçmen · hazine −10', '12 adult migrants · treasury −10', '12 名成年移民 · 国库 −10');
+add('meşruiyet +%5 · hazine −8', 'legitimacy +5% · treasury −8', '合法性 +5% · 国库 −8');
+add('ticaret ortağı · hazine geliri', 'trade partner · treasury income', '贸易伙伴 · 国库收入');
+add('hazine +25 · komşular küser', 'treasury +25 · neighbors resent it', '国库 +25 · 邻国不满');
+add('araştırma ×2 (12 yıl) · hazine −30', 'research ×2 (12 years) · treasury −30', '研究 ×2（12 年）· 国库 −30');
+add('ticaret geliri ×1,25 (12 yıl) · hazine −20', 'trade income ×1.25 (12 years) · treasury −20', '贸易收入 ×1.25（12 年）· 国库 −20');
+add('toprak kazanma şansı · savaş yorgunluğu', 'chance to gain land · war weariness', '获得土地的概率 · 战争厌战度');
+add('ittifak · güvenli büyüme', 'alliance · safe growth', '联盟 · 安全成长');
+add('savunma ×1,3 (15 yıl) · hazine −30', 'defense ×1.3 (15 years) · treasury −30', '防御 ×1.3（15 年）· 国库 −30');
+add('komşuyu yatıştır · hazine −25', 'appease the neighbor · treasury −25', '安抚邻国 · 国库 −25');
+add('hazine +35 · meşruiyet −%6', 'treasury +35 · legitimacy −6%', '国库 +35 · 合法性 −6%');
+add('meşruiyet +%4 · hazine +8', 'legitimacy +4% · treasury +8', '合法性 +4% · 国库 +8');
+add('hazine +10..+18', 'treasury +10..+18', '国库 +10..+18');
+add('her şehre +12 yiyecek · hazine −25', '+12 food to each city · treasury −25', '每座城市 +12 食物 · 国库 −25');
+add('her şehre +10 · meşruiyet −%4', '+10 to each city · legitimacy −4%', '每座城市 +10 · 合法性 −4%');
+add('meşruiyet +%2', 'legitimacy +2%', '合法性 +2%');
+add('salgın ölümcüllüğü azalır · hazine −15', 'epidemic lethality falls · treasury −15', '瘟疫致死率降低 · 国库 −15');
+add('herkesin enerjisi +10 · hazine −20', 'everyone’s energy +10 · treasury −20', '所有人精力 +10 · 国库 −20');
+add('meşruiyet +%3', 'legitimacy +3%', '合法性 +3%');
+add('isyancılar sakinleşir · meşruiyet −%8', 'rebels calm down · legitimacy −8%', '叛乱者平息 · 合法性 −8%');
+add('meşruiyet +%7 · hazine −25', 'legitimacy +7% · treasury −25', '合法性 +7% · 国库 −25');
+add('meşruiyet +%4 · hazine −15', 'legitimacy +4% · treasury −15', '合法性 +4% · 国库 −15');
+add('+1 şehir, toprak · hazine −30', '+1 city, land · treasury −30', '+1 城市，领土 · 国库 −30');
+add('sur +60, yiyecek +10 · hazine −25', 'walls +60, food +10 · treasury −25', '城墙 +60，食物 +10 · 国库 −25');
+add('16 yetişkin · meşruiyet −%1', '16 adults · legitimacy −1%', '16 名成年人 · 合法性 −1%');
+add('3 yetişkin · araştırma +10', '3 adults · research +10', '3 名成年人 · 研究 +10');
+add('taşıma kapasitesi +%25 (15 yıl), yiyecek +25 · hazine −50', 'carrying capacity +25% (15 years), food +25 · treasury −50', '承载能力 +25%（15 年），食物 +25 · 国库 −50');
+add('asker gücü ×1,2 (15 yıl) · hazine −50', 'soldier strength ×1.2 (15 years) · treasury −50', '士兵力量 ×1.2（15 年）· 国库 −50');
+add('araştırma ×1,4 (12 yıl) · hazine −50', 'research ×1.4 (12 years) · treasury −50', '研究 ×1.4（12 年）· 国库 −50');
+add('meşruiyet +%5 · hazine −10', 'legitimacy +5% · treasury −10', '合法性 +5% · 国库 −10');
+add('ittifak şansı · hazine −20', 'chance of alliance · treasury −20', '结盟概率 · 国库 −20');
+
+/* Outcomes */
+add('savaş zaten bitmiş', 'the war is already over', '战争已经结束');
+add('barış elçisi geri çevrildi', 'the peace envoy was turned away', '和平使节被拒之门外');
+add('ordu yeni silahlarla donandı, savaş sürüyor', 'the army was re-equipped; the war continues', '军队换上新装备，战争继续');
+add('kimse savaşa karışmak istemedi', 'nobody wanted to join the war', '无人愿意参战');
+add('hedef kalmadı', 'no target remains', '已无目标');
+add('ordu hazırlandı, hükümdar sabretti', 'the army was prepared; the ruler waited', '军队已备战，统治者按兵不动');
+add('muhatap yok', 'no counterpart', '没有对话方');
+add('gerginlik yatıştı', 'tensions eased', '紧张局势缓和');
+add('sulama kanalları açıldı: hasat %50 arttı', 'irrigation canals opened: harvest +50%', '灌溉渠开通：收成 +50%');
+add('kanal çöktü, emek boşa gitti', 'the canal collapsed; the labor was wasted', '水渠崩塌，劳而无功');
+add('yeni bir şehir kuruldu', 'a new city was founded', '新城市已建立');
+add('uygun toprak bulunamadı', 'no suitable land was found', '未找到合适土地');
+add('hiçbir önlem alınmadı, ekin sorunu sürdü', 'no action was taken; the crop problem continues', '未采取任何措施，作物问题依旧');
+add('şenlik evlilikleri çoğalttı, halk coştu', 'the festival led to more marriages; the people rejoiced', '庆典促成更多婚姻，民众欢腾');
+add('şenlik soğuk geçti', 'the festival fell flat', '庆典气氛冷淡');
+add('göçmen aileyi krallığa katıldı', 'migrant families joined the kingdom', '移民家庭加入王国');
+add('vergi hafifledi, halk memnun', 'taxes eased; the people are pleased', '赋税减轻，民众满意');
+add('uygun ortak yok', 'no suitable partner', '没有合适伙伴');
+add('karşı taraf anlaşmayı reddetti', 'the other side rejected the agreement', '对方拒绝了协议');
+add('gümrük hazineyi doldurdu ama komşular soğudu', 'customs filled the treasury, but neighbors cooled', '关税充实国库，但邻国态度转冷');
+add('kervancı eli boş döndü', 'the caravan left empty-handed', '商队空手而归');
+add('medrese açıldı, âlimler çalışıyor', 'the academy opened; scholars are working', '学院开放，学者开始工作');
+add('ustalar çoğaldı, çarşı canlandı', 'artisans multiplied; the market came alive', '工匠增多，市集繁荣');
+add('âlimler sarayı terk etti', 'the scholars left the court', '学者离开了宫廷');
+add('fırsat kaçtı', 'the opportunity was lost', '机会错失');
+add('teklif geri çevrildi', 'the proposal was rejected', '提议被拒绝');
+add('surlar yükseldi, nöbetçiler arttı', 'the walls rose; more guards were posted', '城墙增高，守卫增加');
+add('üçüncü bir ittifak kuruldu', 'a third alliance was formed', '第三个联盟已建立');
+add('kimse tehdide karşı bağlanmak istemedi', 'nobody wanted to commit against the threat', '无人愿意共同对抗威胁');
+add('hazine doldu, halk homurdandı', 'the treasury filled; the people grumbled', '国库充盈，民众抱怨');
+add('halk rahatladı', 'the people are relieved', '民众松了一口气');
+add('loncalar vergiyi taşıdı', 'the guilds bore the tax', '行会承担了税收');
+add('ambarlar tahılla doldu', 'the granaries filled with grain', '粮仓堆满粮食');
+add('zorla toplanan tahıl ambarları doldurdu, köylüler küstü', 'forced grain collection filled the granaries; the peasants resented it', '强征粮食填满粮仓，农民心生怨恨');
+add('dualar halkı avuttu ama ambar boş kaldı', 'prayers comforted the people, but the granary stayed empty', '祈祷安慰了民众，但粮仓依旧空空');
+add('karantina salgını yavaşlattı', 'quarantine slowed the epidemic', '隔离延缓了瘟疫');
+add('şifacılar sabaha kadar çalıştı', 'the healers worked until dawn', '医师们工作到天亮');
+add('dualar yetmedi', 'prayers were not enough', '祈祷无济于事');
+add('ayaklanma bastırıldı ama kin kaldı', 'the uprising was crushed, but resentment remains', '起义被镇压，但仇恨犹存');
+add('reformlar halkı yatıştırdı', 'reforms calmed the people', '改革安抚了民众');
+add('şölen herkesi neşelendirdi', 'the feast lifted everyone’s spirits', '盛宴令众人欢欣');
+add('şehirler onarıldı', 'the cities were repaired', '城市已修缮');
+add('fırsat değerlendirilmedi', 'the opportunity was not taken', '机会未被把握');
+add('göçmen kabul edildi', 'migrants were accepted', '移民被接纳');
+add('usta göçmenler atölyelere yerleşti', 'master migrants settled in the workshops', '工匠移民进驻工坊');
+add('kafile yoluna devam etti', 'the group moved on', '队伍继续上路');
+add('ambarlar ve çarşılar büyüdü', 'granaries and markets grew', '粮仓与市集扩建');
+add('ordu yeni silahlarla donandı', 'the army was re-equipped', '军队换上新装备');
+add('âlimlere cömert ödenek verildi', 'scholars received generous funding', '学者获得慷慨拨款');
+add('varis saraya hazırlandı', 'the heir was prepared for the court', '继承人已为宫廷做好准备');
+add('evlilik teklifi sonuçsuz kaldı', 'the marriage proposal came to nothing', '联姻提议无果');
+add('varis sorunu çözülmedi', 'the succession problem was not solved', '继承问题未解决');
+add('savaş ertelendi', 'the war was postponed', '战争被推迟');
+add('hükümdar sabretti', 'the ruler waited', '统治者按兵不动');
+add('halk coştu', 'the people rejoiced', '民众欢腾');
+
+addBlock('inspectEmpty',
+  'Haritada bir figüre tıkla, <b>Kişiler</b> sekmesinden birini seç ya da <button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 ilginç bir kişi</button> göster.',
+  'Click a figure on the map, pick one from the <b>People</b> tab, or show a <button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 random person</button>.',
+  '点击地图上的身影，从<b>人物</b>标签中选择一位，或显示一个<button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 有趣人物</button>。');
+
+/* base hint fragments (the cost tail is scaled at runtime) */
+add("asker gücü ×1,3 (12 yıl)", "soldier strength ×1.3 (12 years)", "士兵力量 ×1.3（12 年）");
+add("asker gücü ×1,2 (8 yıl)", "soldier strength ×1.2 (8 years)", "士兵力量 ×1.2（8 年）");
+add("gerginlik azalır, 3 yıl ateşkes", "tension falls, 3-year truce", "紧张降低，3 年停战");
+add("hasat +%50, taşıma kapasitesi +%25 (15 yıl)", "harvest +50%, carrying capacity +25% (15 years)", "收成 +50%，承载能力 +25%（15 年）");
+add("yeni şehir", "new city", "新城市");
+add("doğurganlık +%70 (10 yıl)", "fertility +70% (10 years)", "生育率 +70%（10 年）");
+add("12 yetişkin göçmen", "12 adult migrants", "12 名成年移民");
+add("meşruiyet +%5", "legitimacy +5%", "合法性 +5%");
+add("araştırma ×2 (12 yıl)", "research ×2 (12 years)", "研究 ×2（12 年）");
+add("ticaret geliri ×1,25 (12 yıl)", "trade income ×1.25 (12 years)", "贸易收入 ×1.25（12 年）");
+add("savunma ×1,3 (15 yıl)", "defense ×1.3 (15 years)", "防御 ×1.3（15 年）");
+add("komşuyu yatıştır", "appease the neighbor", "安抚邻国");
+add("her şehre +12 yiyecek", "+12 food to each city", "每座城市 +12 食物");
+add("salgın ölümcüllüğü azalır", "epidemic lethality falls", "瘟疫致死率降低");
+add("herkesin enerjisi +10", "everyone’s energy +10", "所有人精力 +10");
+add("meşruiyet +%7", "legitimacy +7%", "合法性 +7%");
+add("meşruiyet +%4", "legitimacy +4%", "合法性 +4%");
+add("sur +60, yiyecek +10", "walls +60, food +10", "城墙 +60，食物 +10");
+add("taşıma kapasitesi +%25 (15 yıl), yiyecek +25", "carrying capacity +25% (15 years), food +25", "承载能力 +25%（15 年），食物 +25");
+add("asker gücü ×1,2 (15 yıl)", "soldier strength ×1.2 (15 years)", "士兵力量 ×1.2（15 年）");
+add("araştırma ×1,4 (12 yıl)", "research ×1.4 (12 years)", "研究 ×1.4（12 年）");
+add("ittifak şansı", "chance of alliance", "结盟概率");
+add("ticaret ortağı", "trade partner", "贸易伙伴");
+add("hazine +25", "treasury +25", "国库 +25");
+add("komşular küser", "neighbors take offense", "邻国不满");
+
+/* ===================== Narrative tails & omens ===================== */
+add('kervanlar yola çıktı', 'the caravans set out', '商队启程');
+add('çarşılarda ilk takaslar yapıldı', 'the first exchanges were made in the bazaars', '集市上完成了最初的交易');
+add('tuz ve tahıl takası başladı', 'the exchange of salt and grain began', '盐与粮食的交换开始了');
+add('tüccarlar sınır kapılarında karşılandı', 'merchants were welcomed at the border gates', '商人在边关受到迎接');
+add('iki saray arasında hediyeler değiş tokuş edildi', 'gifts were exchanged between the two courts', '两座宫廷互赠礼物');
+add('loncalar sevindi, gümrükçüler homurdandı', 'the guilds rejoiced; the customs officers grumbled', '行会欢欣，海关官员抱怨');
+
+add('iki hükümdar sınırda el sıkıştı', 'the two rulers shook hands at the border', '两位统治者在边境握手');
+add('ortak düşmanlara karşı yemin edildi', 'an oath was sworn against common enemies', '共同宣誓对抗敌人');
+add('rahipler antlaşmayı mühürledi', 'priests sealed the treaty', '祭司为条约盖章');
+add('şölen üç gün sürdü', 'the feast lasted three days', '盛宴持续了三天');
+add('elçiler gül suyu ve kılıç değiş tokuş etti', 'envoys exchanged rosewater and swords', '使节互赠玫瑰水与刀剑');
+
+add('çocuklar ve yaşlılar ilk düşenler oldu', 'children and the elderly were the first to fall', '儿童与老人最先倒下');
+add('köylüler evlerine kapandı', 'the villagers shut themselves in their homes', '村民闭门不出');
+add('şifacılar yetişemiyor', 'the healers cannot keep up', '医师们应接不暇');
+add('kapılara işaret çekildi', 'marks were painted on the doors', '门上被画上标记');
+add('pazarlar boşaldı, çanlar gün boyu çaldı', 'the markets emptied; bells rang all day', '集市空了，钟声整日回荡');
+
+add('ilk evler kerpiçten dikildi', 'the first houses were raised from mudbrick', '最初的房屋用土坯建成');
+add('çiftçiler yeni tarlaları sürmeye başladı', 'farmers began plowing new fields', '农民开始开垦新田');
+add('surların temeli atıldı', 'the foundations of the walls were laid', '城墙奠基');
+add('rahipler yeri kutsadı', 'priests blessed the site', '祭司为土地祈福');
+add('göçebe aileler yerleşmeye karar verdi', 'nomadic families decided to settle', '游牧家庭决定定居');
+add('kuyu kazılırken sağlam bir kaynak çıktı', 'a steady spring was found while digging the well', '挖井时发现稳定水源');
+add('ilk kışı çadırlarda geçirdiler', 'they spent the first winter in tents', '他们在帐篷里度过第一个冬天');
+add('hükümdar temel taşını kendi elleriyle koydu', 'the ruler laid the foundation stone with his own hands', '统治者亲手安放奠基石');
+add('tüccarlar hemen bir pazar yeri istedi', 'merchants immediately asked for a marketplace', '商人立刻要求设立集市');
+add('nehir kıyısındaki yer günlerce tartışıldı', 'the riverside site was debated for days', '河畔选址争论了数日');
+
+add('âlimler yıllardır bu sırrın peşindeydi', 'scholars had pursued this secret for years', '学者们追寻这个秘密多年');
+add('ustalar hemen denemeye koyuldu', 'the masters immediately began to experiment', '工匠们立刻开始试验');
+add('haber komşu diyarlara yayıldı', 'news spread to neighboring lands', '消息传遍邻邦');
+add('eski usuller yavaş yavaş terk edildi', 'old methods were slowly abandoned', '旧方法逐渐被弃用');
+add('bir çırağın tesadüfi buluşu olduğu söyleniyor', 'it is said to have been an apprentice’s accidental discovery', '据说是学徒的偶然发现');
+add('saray bunu gizli tutmaya çalıştı ama başaramadı', 'the court tried to keep it secret but failed', '宫廷试图保密却未能成功');
+add('köylüler önce şüpheyle baktı', 'the villagers looked on with suspicion at first', '村民起初心存疑虑');
+add('yaşlı ustalar başlarını salladı, gençler heyecanlandı', 'old masters shook their heads; the young grew excited', '老工匠摇头，年轻人兴奋');
+add('tüccarlar sırrı yabancı diyarlara taşıdı', 'merchants carried the secret to foreign lands', '商人把秘密带往异邦');
+add('ilk denemede atölye yandı, ikincide tuttu', 'the workshop burned on the first try; the second worked', '第一次尝试烧毁了工坊，第二次成功');
+
+add('ihtiyarlar bunu atalardan kalma saydı', 'the elders deemed it an inheritance from the ancestors', '长老们视之为祖先的遗产');
+add('gençler önce direndi, sonra benimsedi', 'the young resisted at first, then embraced it', '年轻人起初抗拒，后来接受');
+add('şölenlerle kutlandı', 'it was celebrated with feasts', '人们以盛宴庆祝');
+add('köylerde hâlâ tartışılıyor', 'it is still debated in the villages', '村庄里仍在争论');
+add('rahipler ilk başta karşı çıktı', 'priests objected at first', '祭司起初反对');
+add('meydanda davullarla ilan edildi', 'it was proclaimed with drums in the square', '在广场以鼓声宣告');
+add('komşu halklar da öykündü', 'neighboring peoples imitated it', '邻邦纷纷效仿');
+add('bir bilge kadının sözüyle başladığı anlatılıyor', 'it is told that a wise woman’s words began it', '相传始于一位智慧女性的话语');
+add('çocuklara ilk kez bu şekilde öğretildi', 'children were taught this way for the first time', '孩子们首次以这种方式接受教育');
+add('kimi köyler hâlâ eski usulde direniyor', 'some villages still resist in the old way', '有些村庄仍固守旧俗');
+
+add('borazanlar çaldı', 'the horns sounded', '号角吹响');
+add('köylüler silah altına çağrıldı', 'the villagers were called to arms', '村民被征召入伍');
+add('sınır köylerinde ateşler yandı', 'fires burned in the border villages', '边境村庄燃起火光');
+add('ambarlar ordular için boşaltıldı', 'granaries were emptied for the armies', '粮仓为军队清空');
+add('kâhinler zafer fal ettiler', 'seers divined victory', '预言者占卜胜利');
+
+add('iki taraf da yorgundu', 'both sides were weary', '双方都已疲惫');
+add('ölülerini gömmek istiyorlardı', 'they wanted to bury their dead', '他们想埋葬死者');
+add('tarlalar boş kalmıştı', 'the fields had been left empty', '田地荒芜');
+add('elçiler zeytin dalı taşıdı', 'envoys carried olive branches', '使节手持橄榄枝');
+
+add('köylüler üç gün şenlik yaptı', 'the villagers celebrated for three days', '村民庆祝了三天');
+add('ambarlar ağzına kadar doldu', 'the granaries filled to the brim', '粮仓满溢');
+add('tarlalarda şarkılar söylendi', 'songs were sung in the fields', '田间响起歌声');
+add('değirmenler gece gündüz döndü', 'the mills turned day and night', '磨坊日夜转动');
+
+add('hanedan duvarlarına yeni bir portre asıldı', 'a new portrait was hung on the dynasty’s walls', '王朝的墙上挂起新画像');
+add('taç giyme töreni üç gün sürdü', 'the coronation lasted three days', '加冕典礼持续三天');
+add('eski hükümdarın yası henüz bitmemişti', 'mourning for the old ruler had not yet ended', '先王的丧期尚未结束');
+add('saray şairleri hemen methiye yazdı', 'court poets immediately wrote panegyrics', '宫廷诗人立刻写下颂词');
+
+/* Throne accession flavors */
+add('babasının mirasını devraldı', 'inherited his father’s legacy', '继承了父亲的遗产');
+add('ölen hükümdarın yası henüz bitmemişti', 'mourning for the dead ruler had not yet ended', '先王的丧期尚未结束');
+add('ileri gelenler oy verdi', 'the notables cast their votes', '显贵们投了票');
+add('meclis bir hafta tartıştı', 'the assembly debated for a week', '议事会争论了一周');
+add('oylar çok yakındı', 'the votes were very close', '票数非常接近');
+add('halk sokakları doldurmuştu', 'the people filled the streets', '民众挤满街道');
+add('saray kapıları zorlanmıştı', 'the palace gates had been forced', '宫廷大门被强行推开');
+add('eski hükümdar sürgüne gönderildi', 'the old ruler was sent into exile', '旧统治者被流放');
+add('saray kavgasız geçmedi', 'the court did not pass without strife', '宫廷并非风平浪静');
+add('iki kardeş arasındaki soğukluk sürdü', 'the chill between the two brothers persisted', '两兄弟间的冷淡持续');
+add('tahtın hakkı uzun tartışıldı', 'the right to the throne was long debated', '王位继承权争论良久');
+
+/* Omens */
+add('Gökyüzünde kuyruklu yıldız belirdi', 'A comet appeared in the sky', '天空出现彗星');
+add('Güneş gün ortasında karardı', 'The sun darkened at midday', '正午太阳变暗');
+add('Gece boyunca gökten taş yağdı', 'Stones rained from the sky all night', '整夜有石头从天而降');
+add('Nehir bir gece kıpkırmızı aktı', 'The river ran crimson one night', '河流有一夜变得血红');
+add('Kırlarda sürüler korkuyla kaçıştı', 'Herds fled in terror across the fields', '田野上的兽群惊恐奔逃');
+add('kıtlık', 'famine', '饥荒');
+add('deprem', 'earthquake', '地震');
+
+/* Vignette tails */
+add('sofraları hep birlikte kuruyorlar', 'they always set the table together', '他们总是一起摆桌吃饭');
+add('köyde "ayrılmaz ikili" derler', 'the village calls them “the inseparable pair”', '村里称他们“形影不离的一对”');
+add('biri düşse öbürü kaldırıyor', 'if one falls, the other lifts them up', '一人跌倒，另一人扶起');
+add('her işe birlikte koşuyorlar', 'they rush to every task together', '他们一起奔赴每件事');
+add('köy iki safa bölündü', 'the village split into two camps', '村庄分裂成两派');
+add('komşular onları ayrı tutmaya çalışıyor', 'neighbors try to keep them apart', '邻居试图让他们保持距离');
+add('kavga her bayramda yeniden alevleniyor', 'the quarrel flares up again every festival', '每逢节庆争吵便重燃');
+add('kimse artık aralarına girmek istemiyor', 'no one wants to come between them anymore', '再没人愿意介入他们之间');
+add('ciddi ve hazırlıklı', 'serious and prepared', '严肃而准备充分');
+add('sabırsız ve hırslı', 'impatient and ambitious', '急躁而野心勃勃');
+add('henüz kararsız', 'still undecided', '仍然犹豫不决');
+
+/* Person event sentences (exact parts) */
+add('yaşlanınca askerlikten emekli oldu', 'retired from soldiering in old age', '年老后从军旅退役');
+add('hayatı değişti', 'their life changed', '人生发生了转变');
+add('bir çocuğu oldu', 'had a child', '有了一个孩子');
+add('eşi', 'spouse', '配偶');
+add('hükümdarı oldu', 'became ruler of', '成为……的统治者');
+add('krallığını kurdu', 'founded the kingdom', '建立了王国');
+add('ailesi yas tutuyor', 'the family mourns', '家人哀悼');
+add('huzur içinde öldü', 'died peacefully', '安详离世');
+add('tarafından öldürüldü', 'was killed by', '被……杀害');
+add('devirdiği düşman', 'enemies defeated', '击败的敌人');
+add('büyük bir savaş', 'a great war', '一场大战');
+add('yeni bir hükümdar', 'a new ruler', '新统治者');
+
+/* Prose fragments */
+add('halkının', 'people’s', '……的民众');
+add('neslinden', 'generation', '代');
+add('biri', 'a person', '一个人');
+add('biriydi', 'was a person', '是一个人');
+add('Şimdiye dek', 'So far', '迄今为止');
+add('düşman devirdi', 'enemies defeated', '击败了敌人');
+add('çocuğu oldu', 'children were born', '有了孩子');
+add('En çok aklında kalan:', 'What remains most in their mind:', '最难忘的是：');
+add('Yıl', 'Year', '第……年');
+add('gün', 'day', '天');
+
+/* ===================== Dynamic patterns ===================== */
+const I18N_TR_SUFFIX = /['’][A-Za-zÇĞİÖŞÜçğıöşüâîû]+$/;
+const cleanName = s => String(s == null ? '' : s).replace(I18N_TR_SUFFIX, '').trim();
+const T = s => i18nCore(String(s), false, false);
+
+const I18N_UNITS = {
+  'kişi': ['person', 'people', '人'],
+  'şehir': ['city', 'cities', '座城市'],
+  'yıl': ['year', 'years', '年'],
+  'gün': ['day', 'days', '天'],
+  'olay': ['event', 'events', '个事件'],
+  'kayıt': ['record', 'records', '条记录'],
+  'gelenek': ['tradition', 'traditions', '项传统'],
+  'buluş': ['discovery', 'discoveries', '项发现'],
+  'savaş': ['war', 'wars', '场战争'],
+  'zafer': ['victory', 'victories', '场胜利'],
+  'çocuk': ['child', 'children', '个孩子'],
+  'düşman': ['enemy', 'enemies', '名敌人'],
+  'toprak': ['land', 'land', '块领土'],
+  'krallık': ['kingdom', 'kingdoms', '个王国'],
+  'efsane': ['legend', 'legends', '位传奇'],
+  'savaş kaydı': ['war record', 'war records', '条战争记录']
+};
+function i18nUnitEn(unit, n) {
+  const u = I18N_UNITS[unit];
+  return u ? (n === 1 ? u[0] : u[1]) : unit;
+}
+function i18nUnitZh(unit) {
+  const u = I18N_UNITS[unit];
+  return u ? u[2] : unit;
+}
+function i18nCountEn(n, unit) { return n + ' ' + i18nUnitEn(unit, n); }
+function i18nCountZh(n, unit) { return n + ' ' + i18nUnitZh(unit); }
+
+function i18nRule(re, en, zh) { I18N_RULES.push({ re, en, zh }); }
+
+/* ---------- Dates, counts, compact fragments ---------- */
+i18nRule(/^Yıl (\d+)$/, m => 'Year ' + m[1], m => '第 ' + m[1] + ' 年');
+i18nRule(/^Yıl (\d+) · (Bahar|Yaz|Sonbahar|Kış) · (\d+)\. gün$/,
+  m => 'Year ' + m[1] + ' · ' + T(m[2]) + ' · day ' + m[3],
+  m => '第 ' + m[1] + ' 年 · ' + T(m[2]) + ' · 第 ' + m[3] + ' 天');
+i18nRule(/^(\d+)\. gün$/, m => 'Day ' + m[1], m => '第 ' + m[1] + ' 天');
+i18nRule(/^(.+?) · ☀ KURAKLIK$/,
+  m => T(m[1]) + ' · ☀ DROUGHT', m => T(m[1]) + ' · ☀ 干旱');
+i18nRule(/^(\d+)$/, m => m[1], m => m[1]);
+i18nRule(/^Y(\d+)$/, m => 'Y' + m[1], m => 'Y' + m[1]);
+i18nRule(/^(\d+)\s+(kişi|şehir|yıl|gün|olay|kayıt|gelenek|buluş|savaş|zafer|çocuk|düşman|toprak)$/,
+  m => i18nCountEn(+m[1], m[2]), m => i18nCountZh(+m[1], m[2]));
+i18nRule(/^\+(\d+) doğum,$/, m => '+' + m[1] + ' ' + (+m[1] === 1 ? 'birth' : 'births') + ',', m => '+' + m[1] + ' 出生，');
+i18nRule(/^−(\d+) ölüm$/, m => '−' + m[1] + ' ' + (+m[1] === 1 ? 'death' : 'deaths'), m => '−' + m[1] + ' 死亡');
+i18nRule(/^(\d+)\. nesil$/, m => 'generation ' + m[1], m => '第 ' + m[1] + ' 代');
+i18nRule(/^(\d+) yaşında$/, m => 'age ' + m[1], m => m[1] + ' 岁');
+i18nRule(/^(\d+) yaş$/, m => 'age ' + m[1], m => m[1] + ' 岁');
+i18nRule(/^(\d+) yaşıyor$/, m => 'age ' + m[1], m => m[1] + ' 岁');
+i18nRule(/^(\d+)\/(\d+) buluş$/, m => m[1] + '/' + m[2] + ' discoveries', m => m[1] + '/' + m[2] + ' 项发现');
+i18nRule(/^(\d+)\/(\d+) gelenek$/, m => m[1] + '/' + m[2] + ' traditions', m => m[1] + '/' + m[2] + ' 项传统');
+i18nRule(/^\((\d+) buluş\)$/, m => '(' + m[1] + ' ' + i18nUnitEn('buluş', +m[1]) + ')', m => '（' + m[1] + ' 项发现）');
+i18nRule(/^\((\d+) gelenek\)$/, m => '(' + m[1] + ' ' + i18nUnitEn('gelenek', +m[1]) + ')', m => '（' + m[1] + ' 项传统）');
+i18nRule(/^(.+?) \((\d+) buluş\)$/, m => T(m[1]) + ' (' + m[2] + ' ' + i18nUnitEn('buluş', +m[2]) + ')', m => T(m[1]) + '（' + m[2] + ' 项发现）');
+i18nRule(/^(.+?) \((\d+) gelenek\)$/, m => T(m[1]) + ' (' + m[2] + ' ' + i18nUnitEn('gelenek', +m[2]) + ')', m => T(m[1]) + '（' + m[2] + ' 项传统）');
+i18nRule(/^(.+?) \((\d+) olay\)$/, m => T(m[1]) + ' (' + m[2] + ' ' + i18nUnitEn('olay', +m[2]) + ')', m => T(m[1]) + '（' + m[2] + ' 个事件）');
+i18nRule(/^(.+?) \(en ilginç (\d+)\)$/, m => T(m[1]) + ' (top ' + m[2] + ' most interesting)', m => T(m[1]) + '（最有趣的 ' + m[2] + ' 位）');
+i18nRule(/^(.+?) \(en önemli (\d+)\)$/, m => T(m[1]) + ' (top ' + m[2] + ' most important)', m => T(m[1]) + '（最重要的 ' + m[2] + ' 位）');
+i18nRule(/^(\d+) kişi \(en ilginç (\d+)\)$/, m => m[1] + ' ' + i18nUnitEn('kişi', +m[1]) + ' (top ' + m[2] + ' most interesting)', m => m[1] + ' 人（最有趣的 ' + m[2] + ' 位）');
+i18nRule(/^(\d+) kişi \(en önemli (\d+)\)$/, m => m[1] + ' ' + i18nUnitEn('kişi', +m[1]) + ' (top ' + m[2] + ' most important)', m => m[1] + ' 人（最重要的 ' + m[2] + ' 位）');
+i18nRule(/^(\d+)\/(\d+) buluş$/, m => m[1] + '/' + m[2] + ' discoveries', m => m[1] + '/' + m[2] + ' 项发现');
+i18nRule(/^(.+?) \+(\d+)%$/, m => T(m[1]) + ' +' + m[2] + '%', m => T(m[1]) + ' +' + m[2] + '%');
+i18nRule(/^(.+?) \+(\d+)$/, m => T(m[1]) + ' +' + m[2], m => T(m[1]) + ' +' + m[2]);
+i18nRule(/^(.+?) −(\d+)%$/, m => T(m[1]) + ' −' + m[2] + '%', m => T(m[1]) + ' −' + m[2] + '%');
+i18nRule(/^(.+?) ×([\d,.]+)$/, m => T(m[1]) + ' ×' + m[2], m => T(m[1]) + ' ×' + m[2]);
+i18nRule(/^(.+?) +%(\d+)$/, m => T(m[1]) + ' ' + m[2] + '%', m => T(m[1]) + ' ' + m[2] + '%');
+
+/* short term + number / percentage */
+i18nRule(/^şehir (\d+)$/, m => m[1] + ' ' + i18nUnitEn('şehir', +m[1]), m => m[1] + ' 座城市');
+i18nRule(/^toprak (\d+)$/, m => 'land: ' + m[1], m => '领土：' + m[1]);
+i18nRule(/^meşruiyet (\d+)%$/, m => 'legitimacy ' + m[1] + '%', m => '合法性 ' + m[1] + '%');
+i18nRule(/^huzursuzluk (\d+)%$/, m => 'unrest ' + m[1] + '%', m => '动荡 ' + m[1] + '%');
+i18nRule(/^yorgunluk (\d+)$/, m => 'weariness ' + m[1], m => '厌战 ' + m[1]);
+i18nRule(/^nüfus (\d+)$/, m => 'population ' + m[1], m => '人口 ' + m[1]);
+i18nRule(/^hazine (\d+)$/, m => 'treasury ' + m[1], m => '国库 ' + m[1]);
+i18nRule(/^araştırma (\d+)$/, m => 'research ' + m[1], m => '研究 ' + m[1]);
+i18nRule(/^kültür (\d+)$/, m => 'culture ' + m[1], m => '文化 ' + m[1]);
+i18nRule(/^güven (\d+)%$/, m => 'trust ' + m[1] + '%', m => '信任 ' + m[1] + '%');
+i18nRule(/^inanç puanı (\d+)$/, m => 'faith points ' + m[1], m => '信仰点 ' + m[1]);
+i18nRule(/^yaş (\d+)$/, m => 'age ' + m[1], m => '年龄 ' + m[1]);
+i18nRule(/^çocuk (\d+)$/, m => 'children ' + m[1], m => '儿童 ' + m[1]);
+i18nRule(/^nesil (\d+)$/, m => 'generation ' + m[1], m => '第 ' + m[1] + ' 代');
+i18nRule(/^hedef: (.+)$/, m => 'goal: ' + T(m[1]), m => '目标：' + T(m[1]));
+i18nRule(/^ruh hâli: (.+)$/, m => 'mood: ' + T(m[1]), m => '心情：' + T(m[1]));
+i18nRule(/^ölüm: (.+)$/, m => 'death: ' + T(m[1]), m => '死亡：' + T(m[1]));
+i18nRule(/^katili (.+)$/, m => 'killer ' + T(m[1]), m => '凶手 ' + T(m[1]));
+i18nRule(/^devirdiği düşman: (\d+)$/, m => 'enemies defeated: ' + m[1], m => '击败的敌人：' + m[1]);
+i18nRule(/^ambar (\d+)$/, m => 'granary ' + m[1], m => '粮仓 ' + m[1]);
+i18nRule(/^ambar · (.+)$/, m => 'granary · ' + m[1], m => '粮仓 · ' + m[1]);
+i18nRule(/^surlar · (.+)$/, m => 'walls · ' + m[1], m => '城墙 · ' + m[1]);
+i18nRule(/^tarlalar · (.+)$/, m => 'fields · ' + m[1], m => '田地 · ' + m[1]);
+i18nRule(/^ekim: %(\d+)$/, m => 'sowing: ' + m[1] + '%', m => '播种：' + m[1] + '%');
+i18nRule(/^filizleniyor: %(\d+) ekili$/, m => 'sprouting: ' + m[1] + '% sown', m => '发芽：' + m[1] + '% 已播种');
+i18nRule(/^hasat bekleyen: (\d+)$/, m => 'awaiting harvest: ' + m[1], m => '待收割：' + m[1]);
+i18nRule(/^(.+?) · başkent$/, m => T(m[1]) + ' · capital', m => T(m[1]) + ' · 首都');
+
+/* ---------- Panel status lines ---------- */
+i18nRule(/^⚔ (.+?) \(yorgunluk (\d+)\)$/, m => '⚔ ' + T(m[1]) + ' (weariness ' + m[2] + ')', m => '⚔ ' + T(m[1]) + '（厌战 ' + m[2] + '）');
+i18nRule(/^(.+?) eski krallık düştü$/, m => m[1] + ' old kingdoms fell', m => m[1] + ' 个旧王国灭亡');
+i18nRule(/^(.+?) halkının (\d+)\. neslinden (.+?); (.+?) biriydi\.$/,
+  m => 'A member of generation ' + m[2] + ' of the people of ' + T(m[1]) + ': ' + T(m[3]) + '; they were ' + T(m[4]) + '.',
+  m => T(m[1]) + ' 民众的第 ' + m[2] + ' 代：' + T(m[3]) + '；是一个' + T(m[4]) + '的人。');
+i18nRule(/^(\w+) halkının (\d+)\. neslinden (.+?); (.+?) biriydi\.$/,
+  m => 'A member of generation ' + m[2] + ' of the people of ' + T(m[1]) + ': ' + T(m[3]) + '; they were ' + T(m[4]) + '.',
+  m => T(m[1]) + ' 民众的第 ' + m[2] + ' 代：' + T(m[3]) + '；是一个' + T(m[4]) + '的人。');
+i18nRule(/^(\d+) kişi · geçen yıl \+(\d+) doğum, −(\d+) ölüm · (.+)$/,
+  m => m[1] + ' ' + i18nUnitEn('kişi', +m[1]) + ' · last year +' + m[2] + ' ' + (+m[2] === 1 ? 'birth' : 'births') + ', −' + m[3] + ' ' + (+m[3] === 1 ? 'death' : 'deaths') + ' · ' + T(m[4]),
+  m => m[1] + ' 人 · 去年 +' + m[2] + ' 出生，−' + m[3] + ' 死亡 · ' + T(m[4]));
+i18nRule(/^(\d+) kişi \(en ilginç (\d+)\)$/, m => m[1] + ' people (top ' + m[2] + ' most interesting)', m => m[1] + ' 人（最有趣的 ' + m[2] + ' 位）');
+
+/* ---------- Trees / info ---------- */
+i18nRule(/^Çağ (\d+)$/, m => 'Era ' + m[1], m => '第 ' + m[1] + ' 时代');
+i18nRule(/^Çağ (\d+) · (\d+)\/22 buluş · yenilikçilik (\d+)% · araştırma (\d+)$/,
+  m => 'Era ' + m[1] + ' · ' + m[2] + '/22 discoveries · innovation ' + m[3] + '% · research ' + m[4],
+  m => '第 ' + m[1] + ' 时代 · ' + m[2] + '/22 项发现 · 创新 ' + m[3] + '% · 研究 ' + m[4]);
+i18nRule(/^Kültürel kimlik: (.+?) · (\d+)\/14 gelenek · kültür (\d+)$/,
+  m => 'Cultural identity: ' + T(m[1]) + ' · ' + m[2] + '/14 traditions · culture ' + m[3],
+  m => '文化认同：' + T(m[1]) + ' · ' + m[2] + '/14 项传统 · 文化 ' + m[3]);
+i18nRule(/^yıl (\d+) · (\d+) kişi kaydı · (\d+) olay · (\d+) krallık$/,
+  m => 'year ' + m[1] + ' · ' + m[2] + ' ' + (+m[2] === 1 ? 'person record' : 'person records') + ' · ' + m[3] + ' ' + i18nUnitEn('olay', +m[3]) + ' · ' + m[4] + ' ' + i18nUnitEn('krallık', +m[4]),
+  m => '第 ' + m[1] + ' 年 · ' + m[2] + ' 条人物记录 · ' + m[3] + ' 个事件 · ' + m[4] + ' 个王国');
+i18nRule(/^(\d+) efsane · yıl (\d+)$/, m => m[1] + ' ' + i18nUnitEn('efsane', +m[1]) + ' · year ' + m[2], m => m[1] + ' 位传奇 · 第 ' + m[2] + ' 年');
+i18nRule(/^yaşayan krallık (\d+) \/ toplam (\d+) · yaşayan nüfus (\d+)$/,
+  m => 'living kingdoms ' + m[1] + ' / total ' + m[2] + ' · living population ' + m[3],
+  m => '现存王国 ' + m[1] + ' / 总计 ' + m[2] + ' · 现存人口 ' + m[3]);
+i18nRule(/^(\d+) kayıt · Yıl (\d+) · (Bahar|Yaz|Sonbahar|Kış) · (\d+)\. gün$/,
+  m => m[1] + ' ' + i18nUnitEn('kayıt', +m[1]) + ' · Year ' + m[2] + ' · ' + T(m[3]) + ' · day ' + m[4],
+  m => m[1] + ' 条记录 · 第 ' + m[2] + ' 年 · ' + T(m[3]) + ' · 第 ' + m[4] + ' 天');
+i18nRule(/^(\d+) olay \(son (\d+)\)$/, m => m[1] + ' ' + i18nUnitEn('olay', +m[1]) + ' (last ' + m[2] + ')', m => m[1] + ' 个事件（最近 ' + m[2] + ' 条）');
+i18nRule(/^(\d+) kişi$/, m => m[1] + ' ' + i18nUnitEn('kişi', +m[1]), m => m[1] + ' 人');
+i18nRule(/^(\d+) krallık$/, m => m[1] + ' ' + i18nUnitEn('krallık', +m[1]), m => m[1] + ' 个王国');
+i18nRule(/^(\d+) şehir$/, m => m[1] + ' ' + i18nUnitEn('şehir', +m[1]), m => m[1] + ' 座城市');
+i18nRule(/^(\d+) savaş kaydı$/, m => m[1] + ' ' + i18nUnitEn('savaş kaydı', +m[1]), m => m[1] + ' 条战争记录');
+i18nRule(/^(\d+) zafer$/, m => m[1] + ' ' + i18nUnitEn('zafer', +m[1]), m => m[1] + ' 场胜利');
+i18nRule(/^(\d+) yıl$/, m => m[1] + ' ' + i18nUnitEn('yıl', +m[1]), m => m[1] + ' 年');
+i18nRule(/^(\d+)\.(\d+) yıl$/, m => m[1] + '.' + m[2] + ' years', m => m[1] + '.' + m[2] + ' 年');
+i18nRule(/^\((\d+)\.(\d+) yıl\)$/, m => '(' + m[1] + '.' + m[2] + ' years)', m => '（' + m[1] + '.' + m[2] + ' 年）');
+i18nRule(/^Y(\d+) – şimdi$/, m => 'Y' + m[1] + ' – now', m => 'Y' + m[1] + ' – 至今');
+i18nRule(/^Y(\d+) – Y(\d+)$/, m => 'Y' + m[1] + ' – Y' + m[2], m => 'Y' + m[1] + ' – Y' + m[2]);
+i18nRule(/^Y(\d+)–Y(\d+)$/, m => 'Y' + m[1] + '–Y' + m[2], m => 'Y' + m[1] + '–Y' + m[2]);
+i18nRule(/^kuruluş Y(\d+)$/, m => 'founded Y' + m[1], m => '建立于 Y' + m[1]);
+i18nRule(/^yıkıldı \(Y(\d+)\)$/, m => 'collapsed (Y' + m[1] + ')', m => '灭亡（Y' + m[1] + '）');
+i18nRule(/^yaşayan krallık (\d+)$/, m => 'living kingdoms ' + m[1], m => '现存王国 ' + m[1]);
+i18nRule(/^Yıl (\d+) doğumlu · Yıl (\d+)'de öldü \((\d+) yaşında\)$/,
+  m => 'born Year ' + m[1] + ' · died Year ' + m[2] + ' (age ' + m[3] + ')',
+  m => '第 ' + m[1] + ' 年出生 · 第 ' + m[2] + ' 年去世（' + m[3] + ' 岁）');
+i18nRule(/^kuruluştan önce doğdu · Yıl (\d+)'de öldü \((\d+) yaşında\)$/,
+  m => 'born before the founding · died Year ' + m[1] + ' (age ' + m[2] + ')',
+  m => '建国前出生 · 第 ' + m[1] + ' 年去世（' + m[2] + ' 岁）');
+i18nRule(/^yaşıyor · (\d+) yaşında$/, m => 'alive · age ' + m[1], m => '在世 · ' + m[1] + ' 岁');
+i18nRule(/^Y(\d+) doğumlu$/, m => 'born Y' + m[1], m => 'Y' + m[1] + ' 出生');
+
+i18nRule(/^Tarih yazılıyor… Yıl (\d+) \/ (\d+) · (\d+) kişi · (\d+) krallık$/,
+  m => 'Writing history… Year ' + m[1] + ' / ' + m[2] + ' · ' + m[3] + ' ' + i18nUnitEn('kişi', +m[3]) + ' · ' + m[4] + ' ' + i18nUnitEn('krallık', +m[4]),
+  m => '正在书写历史… 第 ' + m[1] + ' / ' + m[2] + ' 年 · ' + m[3] + ' 人 · ' + m[4] + ' 个王国');
+
+/* ---------- Event & story narratives ---------- */
+i18nRule(/^(\d+) krallık kuruldu\. Tarih başlıyor\.$/,
+  m => m[1] + ' kingdoms founded. History begins.',
+  m => m[1] + ' 个王国建立。历史开始了。');
+
+i18nRule(/^(?:⚙\s*)?(.+?) keşfetti: (.+?) — (.+)$/,
+  m => T(cleanName(m[1])) + ' discovered: ' + T(m[2]) + ' — ' + T(m[3]),
+  m => T(cleanName(m[1])) + ' 发现了：' + T(m[2]) + ' — ' + T(m[3]));
+i18nRule(/^(?:◈\s*)?(.+?) bir gelenek benimsedi: (.+?) — (.+)$/,
+  m => T(cleanName(m[1])) + ' adopted a tradition: ' + T(m[2]) + ' — ' + T(m[3]),
+  m => T(cleanName(m[1])) + ' 采纳了一项传统：' + T(m[2]) + ' — ' + T(m[3]));
+
+i18nRule(/^(?:⚑\s*)?(.+?) saray darbesi$/,
+  m => 'Palace coup in ' + cleanName(m[1]),
+  m => cleanName(m[1]) + ' 发生宫廷政变');
+i18nRule(/^(?:⚑\s*)?(.+?) İSYAN! Yeni krallık doğdu: (.+)$/,
+  m => 'REBELLION in ' + cleanName(m[1]) + '! A new kingdom was born: ' + T(m[2]),
+  m => cleanName(m[1]) + ' 爆发叛乱！新王国诞生：' + T(m[2]));
+i18nRule(/^(.+?) isyanla dağıldı$/,
+  m => T(m[1]) + ' dissolved in rebellion',
+  m => T(m[1]) + ' 在叛乱中解体');
+i18nRule(/^(.+?) yeni hanedan: (.+)$/,
+  m => 'New dynasty in ' + cleanName(m[1]) + ': ' + T(m[2]),
+  m => cleanName(m[1]) + ' 的新王朝：' + T(m[2]));
+i18nRule(/^(.+?), (.+?) tahtına çıktı \((.+?)\)(?: — (.+))?$/,
+  m => m[1] + ' ascended the throne of ' + cleanName(m[2]) + ' (' + T(m[3]) + ')' + (m[4] ? ' — ' + T(m[4]) : ''),
+  m => m[1] + ' 登上 ' + cleanName(m[2]) + ' 的王位（' + T(m[3]) + '）' + (m[4] ? ' — ' + T(m[4]) : ''));
+i18nRule(/^(.+?) veraset krizi$/,
+  m => 'Succession crisis in ' + cleanName(m[1]),
+  m => cleanName(m[1]) + ' 发生继承危机');
+
+i18nRule(/^(?:🗡\s*)?İHANET! (.+?), (müttefiki|ticaret ortağı|komşusu) (.+?) saldırdı \(itibar çöktü\)$/,
+  m => {
+    const rel = m[2] === 'müttefiki' ? 'its ally' : m[2] === 'ticaret ortağı' ? 'its trade partner' : 'its neighbor';
+    return (m[0].startsWith('🗡') ? '🗡 ' : '') + 'BETRAYAL! ' + T(m[1]) + ' attacked ' + rel + ', ' + cleanName(m[3]) + ' (reputation collapsed)';
+  },
+  m => {
+    const rel = m[2] === 'müttefiki' ? '盟友' : m[2] === 'ticaret ortağı' ? '贸易伙伴' : '邻国';
+    return '🗡 背叛！' + T(m[1]) + ' 袭击了其' + rel + ' ' + cleanName(m[3]) + '（声誉崩溃）';
+  });
+i18nRule(/^(?:⚔\s*)?(.+?), (.+?) savaş açtı \(gerekçe: (.+?)\) — (.+)$/,
+  m => T(m[1]) + ' declared war on ' + cleanName(m[2]) + ' (reason: ' + T(m[3]) + ') — ' + T(m[4]),
+  m => T(m[1]) + ' 向 ' + cleanName(m[2]) + ' 宣战（原因：' + T(m[3]) + '）— ' + T(m[4]));
+i18nRule(/^(?:🕊\s*)?(.+?) ile (.+?) barıştı — (.+)$/,
+  m => T(m[1]) + ' made peace with ' + T(m[2]) + ' — ' + T(m[3]),
+  m => T(m[1]) + ' 与 ' + T(m[2]) + ' 议和 — ' + T(m[3]));
+i18nRule(/^(?:⇄\s*)?(.+?) ↔ (.+?) ticaret anlaşması(?: \((.+?)\))? — (.+)$/,
+  m => T(m[1]) + ' ↔ ' + T(m[2]) + ' trade agreement' + (m[3] ? ' (' + T(m[3]) + ')' : '') + ' — ' + T(m[4]),
+  m => T(m[1]) + ' ↔ ' + T(m[2]) + ' 贸易协定' + (m[3] ? '（' + T(m[3]) + '）' : '') + ' — ' + T(m[4]));
+i18nRule(/^(?:🤝\s*)?(.+?) ↔ (.+?) ittifak kurdu(?: \((.+?)\))? — (.+)$/,
+  m => T(m[1]) + ' ↔ ' + T(m[2]) + ' formed an alliance' + (m[3] ? ' (' + T(m[3]) + ')' : '') + ' — ' + T(m[4]),
+  m => T(m[1]) + ' ↔ ' + T(m[2]) + ' 缔结联盟' + (m[3] ? '（' + T(m[3]) + '）' : '') + ' — ' + T(m[4]));
+i18nRule(/^(?:🏛\s*)?(.+?) yeni şehir kurdu: (.+?)(?: — (.+))?$/,
+  m => T(cleanName(m[1])) + ' founded a new city: ' + T(m[2]) + (m[3] ? ' — ' + T(m[3]) : ''),
+  m => T(cleanName(m[1])) + ' 建立了一座新城市：' + T(m[2]) + (m[3] ? ' — ' + T(m[3]) : ''));
+i18nRule(/^(.+?) salgın başladı — (.+)$/,
+  m => 'An epidemic began in ' + cleanName(m[1]) + ' — ' + T(m[2]),
+  m => cleanName(m[1]) + ' 爆发瘟疫 — ' + T(m[2]));
+i18nRule(/^Hayatta kalanlar (.+?) adıyla yeni bir krallık kurdu$/,
+  m => 'The survivors founded a new kingdom called ' + T(m[1]),
+  m => '幸存者建立了名为 ' + T(m[1]) + ' 的新王国');
+i18nRule(/^Büyük kuraklık başladı \(~(\d+) yıl\): tarlalar kurudu$/,
+  m => 'A great drought began (~' + m[1] + ' years): the fields withered',
+  m => '大旱开始（约 ' + m[1] + ' 年）：田地干枯');
+i18nRule(/^Kötü hasat: (.+?) ambarlara yalnızca ~(\d+) kişilik yıllık yiyecek girdi$/, m => 'Poor harvest: only enough food for ~' + m[2] + ' people entered the granaries of ' + cleanName(m[1]), m => '歉收：' + cleanName(m[1]) + ' 的粮仓仅存入约 ' + m[2] + ' 人一年的粮食');
+i18nRule(/^Kötü hasat: (.+?) neredeyse hiç ürün kaldırılamadı$/, m => 'Poor harvest: almost no crops could be gathered in ' + cleanName(m[1]), m => '歉收：' + cleanName(m[1]) + ' 几乎颗粒无收');
+i18nRule(/^Bereketli hasat: (.+?) ambarlara ~(\d+) kişilik yıllık yiyecek girdi — (.+)$/, m => 'Bountiful harvest: enough food for ~' + m[2] + ' people entered the granaries of ' + cleanName(m[1]) + ' — ' + T(m[3]), m => '丰收：' + cleanName(m[1]) + ' 的粮仓存入了约 ' + m[2] + ' 人一年的粮食——' + T(m[3]));
+i18nRule(/^(.+?) halksız kalıp yok oldu$/,
+  m => T(m[1]) + ' was left without people and vanished',
+  m => T(m[1]) + ' 因无人而消亡');
+i18nRule(/^(?:🔥\s*)?(.+?) (.+?) şehri yıkıldı$/,
+  m => (m[0].startsWith('🔥') ? '🔥 ' : '') + cleanName(m[1]) + '’s city of ' + T(m[2]) + ' was destroyed',
+  m => (m[0].startsWith('🔥') ? '🔥 ' : '') + cleanName(m[1]) + ' 的城市 ' + T(m[2]) + ' 被摧毁');
+i18nRule(/^(?:👑\s*)?(.+?), (.+?) FETHETTİ$/,
+  m => T(m[1]) + ' CONQUERED ' + cleanName(m[2]),
+  m => T(m[1]) + ' 征服了 ' + cleanName(m[2]));
+i18nRule(/^(.+?) çöktü$/,
+  m => T(m[1]) + ' collapsed',
+  m => T(m[1]) + ' 崩溃了');
+
+/* Advisor events */
+i18nRule(/^(?:🎩\s*)?Danışman (.+?) sarayına atandı$/,
+  m => (m[0].startsWith('🎩') ? '🎩 ' : '') + 'An advisor was appointed to the court of ' + T(m[1]),
+  m => (m[0].startsWith('🎩') ? '🎩 ' : '') + '一位顾问被任命到 ' + T(m[1]) + ' 的宫廷');
+i18nRule(/^(?:🎩\s*)?(.+?) (danışmanın tavsiyesiyle|hükümdar kendi bildiğini yaparak) "(.+?)": (.+)$/,
+  m => (m[0].startsWith('🎩') ? '🎩 ' : '') + cleanName(m[1]) + ' ' + (m[2] === 'danışmanın tavsiyesiyle' ? 'on the advisor’s advice' : 'by the ruler’s own judgment') + ' "' + T(m[3]) + '": ' + T(m[4]),
+  m => (m[0].startsWith('🎩') ? '🎩 ' : '') + cleanName(m[1]) + (m[2] === 'danışmanın tavsiyesiyle' ? '依照顾问的建议' : '依照统治者的判断') + '「' + T(m[3]) + '」：' + T(m[4]));
+
+/* God events */
+i18nRule(/^🌧 Tanrı yağmur gönderdi: kuraklık sona erdi$/,
+  () => '🌧 God sent rain: the drought ended',
+  () => '🌧 神明降下甘霖：干旱结束');
+i18nRule(/^🌧 Tanrı yağmur gönderdi$/,
+  () => '🌧 God sent rain',
+  () => '🌧 神明降下甘霖');
+i18nRule(/^✚ Tanrı (.+?) salgını dindirdi$/,
+  m => '✚ God ended the epidemic in ' + cleanName(m[1]),
+  m => '✚ 神明终结了 ' + cleanName(m[1]) + ' 的瘟疫');
+i18nRule(/^✚ Tanrı (\d+) kişiyi iyileştirdi$/,
+  m => '✚ God healed ' + m[1] + ' people',
+  m => '✚ 神明治愈了 ' + m[1] + ' 人');
+i18nRule(/^✨ Tanrı (.+?) ilham verdi$/,
+  m => '✨ God inspired ' + cleanName(m[1]),
+  m => '✨ 神明启迪了 ' + cleanName(m[1]));
+i18nRule(/^⚡ Tanrının yıldırımı (.+?) kişisine çarptı$/,
+  m => '⚡ Divine lightning struck ' + cleanName(m[1]),
+  m => '⚡ 神雷击中了 ' + cleanName(m[1]));
+i18nRule(/^🌋 Tanrı yer sarstı: (\d+) şehir hasar gördü, (\d+) kişi öldü$/,
+  m => '🌋 God shook the earth: ' + m[1] + ' ' + i18nUnitEn('şehir', +m[1]) + ' damaged, ' + m[2] + ' ' + i18nUnitEn('kişi', +m[2]) + ' died',
+  m => '🌋 神明震怒：' + m[1] + ' 座城市受损，' + m[2] + ' 人死亡');
+i18nRule(/^☠ Tanrı (.+?) salgın gönderdi$/,
+  m => '☠ God sent an epidemic to ' + cleanName(m[1]),
+  m => '☠ 神明向 ' + cleanName(m[1]) + ' 降下瘟疫');
+
+/* Stories */
+i18nRule(/^(.+?), (.+?) izinden (.+?) oldu$/,
+  m => cleanName(m[1]) + ' followed in the footsteps of ' + cleanName(m[2]) + ' and became a ' + T(m[3]),
+  m => cleanName(m[1]) + ' 追随 ' + cleanName(m[2]) + ' 的脚步，成为' + T(m[3]));
+i18nRule(/^(.+?), (.+?) intikam almaya yemin etti$/,
+  m => m[1] + ' swore to take revenge on ' + cleanName(m[2]),
+  m => m[1] + ' 发誓向 ' + cleanName(m[2]) + ' 复仇');
+i18nRule(/^(.+?) ile (.+?) evlendi$/,
+  m => m[1] + ' married ' + m[2],
+  m => m[1] + ' 与 ' + m[2] + ' 结婚');
+i18nRule(/^(.+?), (.+?) ambarından ganimetle döndü$/,
+  m => m[1] + ' returned with loot from the granary of ' + T(m[2]),
+  m => m[1] + ' 带着从 ' + T(m[2]) + ' 粮仓掠夺的战利品归来');
+i18nRule(/^(.+?), (.+?)(?: çocuğunu)? doğururken öldü$/,
+  m => m[1] + ' died in childbirth' + (m[2] && m[2] !== 'çocuğunu' ? ' while giving birth to ' + T(m[2]) : ''),
+  m => m[1] + ' 死于难产' + (m[2] && m[2] !== 'çocuğunu' ? '，生下 ' + T(m[2]) : ''));
+i18nRule(/^(.+?), (\d+) yaşında (\d+) çocuk bırakarak öldü$/,
+  m => m[1] + ' died at age ' + m[2] + ', leaving ' + m[3] + ' children',
+  m => m[1] + ' 在 ' + m[2] + ' 岁时去世，留下 ' + m[3] + ' 个孩子');
+i18nRule(/^(.+?), (\d+) küçük çocuğuyla dul kaldı$/,
+  m => m[1] + ' was widowed with ' + m[2] + ' young children',
+  m => m[1] + ' 带着 ' + m[2] + ' 个幼子守寡');
+i18nRule(/^(.+?), (.+?) elinde öldü; ailesi yas tutuyor$/,
+  m => m[1] + ' died at the hand of ' + cleanName(m[2]) + '; the family mourns',
+  m => m[1] + ' 死于 ' + cleanName(m[2]) + ' 之手；家人哀悼');
+i18nRule(/^(.+?), (.+?) devirerek intikamını aldı$/,
+  m => m[1] + ' defeated ' + cleanName(m[2]) + ' and took revenge',
+  m => m[1] + ' 击败 ' + cleanName(m[2]) + '，完成复仇');
+i18nRule(/^(.+?) ile (.+?) yıllardır dost: (.+)$/,
+  m => m[1] + ' and ' + m[2] + ' have been friends for years: ' + T(m[3]),
+  m => m[1] + ' 与 ' + m[2] + ' 多年好友：' + T(m[3]));
+i18nRule(/^(.+?) ile (.+?) arasındaki husumet büyüyor: (.+)$/,
+  m => 'The feud between ' + m[1] + ' and ' + m[2] + ' grows: ' + T(m[3]),
+  m => m[1] + ' 与 ' + m[2] + ' 之间的仇恨加深：' + T(m[3]));
+i18nRule(/^(.+?) yaşlanıyor; tahtın muhtemel vârisi (.+?) (ciddi ve hazırlıklı|sabırsız ve hırslı|henüz kararsız)$/,
+  m => m[1] + ' is aging; the likely heir is ' + m[2] + ', ' + T(m[3]),
+  m => m[1] + ' 年事已高；可能的继承人是 ' + m[2] + '，' + T(m[3]));
+i18nRule(/^(.+?); (.+?) halk bunu (.+?) alameti saydı$/,
+  m => T(m[1]) + '; the people of ' + cleanName(m[2]) + ' took it as an omen of ' + T(m[3]),
+  m => T(m[1]) + '；' + cleanName(m[2]) + ' 的民众视之为' + T(m[3]) + '的征兆');
+
+/* Person event fragments */
+i18nRule(/^(.+?) çocuğu olarak doğdu$/,
+  m => cleanName(m[1]) + ' was born as a child',
+  m => cleanName(m[1]) + ' 作为孩子出生');
+i18nRule(/^(.+?) oldu$/, m => {
+  const role = m[1];
+  if (['çiftçi', 'asker', 'hekim', 'tüccar', 'casus', 'zanaatkâr', 'rahip', 'çocuk'].includes(role)) { const r = T(role); return 'became ' + (/^[aeiou]/i.test(r) ? 'an ' : 'a ') + r; }
+  return null;
+}, m => {
+  const role = m[1];
+  if (['çiftçi', 'asker', 'hekim', 'tüccar', 'casus', 'zanaatkâr', 'rahip', 'çocuk'].includes(role)) return '成为' + T(role);
+  return null;
+});
+i18nRule(/^hayatı değişti: (.+?) oldu(\.)?$/,
+  m => { const r = T(m[1]); return 'their life changed: became ' + (/^[aeiou]/i.test(r) ? 'an ' : 'a ') + r + (m[2] || ''); },
+  m => '人生转变：成为' + T(m[1]) + (m[2] || ''));
+i18nRule(/^bir çocuğu oldu: (.+)$/,
+  m => 'had a child: ' + m[1],
+  m => '有了一个孩子：' + m[1]);
+i18nRule(/^eşi (.+?) öldü$/,
+  m => 'their spouse ' + m[1] + ' died',
+  m => '其配偶 ' + m[1] + ' 去世');
+i18nRule(/^(.+?) halkına katıldı$/,
+  m => 'joined the people of ' + T(m[1]),
+  m => '加入了 ' + T(m[1]) + ' 的民众');
+i18nRule(/^(.+?) krallığına göç etti$/,
+  m => 'migrated to the kingdom of ' + T(m[1]),
+  m => '迁徙至 ' + T(m[1]) + ' 王国');
+i18nRule(/^(.+?) hükümdarı oldu \((.+?)\)$/,
+  m => 'became ruler of ' + T(m[1]) + ' (' + T(m[2]) + ')',
+  m => '成为 ' + T(m[1]) + ' 的统治者（' + T(m[2]) + '）');
+i18nRule(/^(.+?) tarafından öldürüldü$/,
+  m => 'was killed by ' + cleanName(m[1]),
+  m => '被 ' + cleanName(m[1]) + ' 杀害');
+i18nRule(/^(\d+) yaşında huzur içinde öldü$/,
+  m => 'died peacefully at age ' + m[1],
+  m => '在 ' + m[1] + ' 岁时安详离世');
+i18nRule(/^(\d+) yaşında hastalıktan öldü$/,
+  m => 'died of illness at age ' + m[1],
+  m => '在 ' + m[1] + ' 岁时死于疾病');
+i18nRule(/^(.+?) devirip intikamını aldı$/,
+  m => 'defeated ' + cleanName(m[1]) + ' and took revenge',
+  m => '击败 ' + cleanName(m[1]) + ' 并完成复仇');
+i18nRule(/^(.+?) devirdi$/,
+  m => 'defeated ' + cleanName(m[1]),
+  m => '击败了 ' + cleanName(m[1]));
+i18nRule(/^(.+?) krallığını kurdu$/,
+  m => 'founded the kingdom of ' + T(m[1]),
+  m => '建立了 ' + T(m[1]) + ' 王国');
+i18nRule(/^(.+?) ile evlendi$/,
+  m => 'married ' + cleanName(m[1]),
+  m => '与 ' + cleanName(m[1]) + ' 结婚');
+i18nRule(/^eşi (.+?) öldü$/,
+  m => 'spouse ' + m[1] + ' died',
+  m => '配偶 ' + m[1] + ' 去世');
+
+i18nRule(/^📜 (.+?) tarihi$/, m => '📜 History of ' + cleanName(m[1]), m => '📜 ' + cleanName(m[1]) + ' 的历史');
+
+i18nRule(/^Kıtlık: (.+?) bu yıl (\d+) kişi açlıktan öldü$/, m => 'Famine: ' + m[2] + ' people starved in ' + cleanName(m[1]) + ' this year', m => '饥荒：' + cleanName(m[1]) + ' 今年有 ' + m[2] + ' 人饿死');
+i18nRule(/^Salgın: (.+?) bu yıl (\d+) kişiyi götürdü$/, m => 'Epidemic: ' + m[2] + ' people were taken in ' + cleanName(m[1]) + ' this year', m => '瘟疫：' + cleanName(m[1]) + ' 今年有 ' + m[2] + ' 人丧生');
+
+/* ---------- Decision reasons ---------- */
+const i18nReasonEn = {
+  'yakınında düşman var': 'an enemy is nearby',
+  'mesleği asker': 'soldier by profession',
+  'ekim mevsimi: tarla sürmek çiftçinin işi': 'sowing season: plowing is a farmer’s work',
+  'hasat mevsimi: olgun ürün tarlada bekliyor': 'harvest season: ripe crops wait in the field',
+  'çiftçi: yiyecek toplamak işi': 'farmer: gathering food is the job',
+  'büyük çocuk ailesine yardım ediyor': 'the older child helps the family',
+  'ganimeti şehre taşıyor': 'carrying loot back to the city',
+  'hekim: yaralı biri var': 'physician: someone is wounded',
+  'yaşlı: ocak başında dinleniyor': 'elder: resting by the hearth',
+  'işinden kaçıp dinleniyor': 'slipping away from work to rest',
+  'yapacak acil işi yok': 'no urgent work to do',
+  'biriyle buluşacak': 'meeting someone',
+  'hamile: eve yakın kalıyor': 'pregnant: staying close to home',
+  'topraklarının dışında, eve dönüyor': 'outside their lands, returning home',
+  'sarayda krallığı yönetiyor': 'ruling the kingdom from the palace',
+  'ticaret yoluyla komşu krallığa gidiyor': 'traveling to a neighboring kingdom on a trade route',
+  'krallığın gizli bir hedefi var': 'the kingdom has a secret goal',
+  'hamile': 'pregnant',
+  'acıkıyor ama başka iş öncelikli': 'hungry, but another task comes first',
+  'çalışkan biri': 'a hard worker',
+  'başıboş, rahatına düşkün': 'idle and fond of comfort',
+  'meraklı, gezmeyi seviyor': 'curious and fond of wandering',
+  'kaygılı biri': 'an anxious person',
+  'onuruna düşkün': 'proud and sensitive to honor',
+  'girişken, insanlarla olmayı seviyor': 'outgoing and fond of company'
+};
+const i18nReasonZh = {
+  'yakınında düşman var': '附近有敌人',
+  'mesleği asker': '职业是士兵',
+  'ekim mevsimi: tarla sürmek çiftçinin işi': '播种季节：耕地是农民的本职',
+  'hasat mevsimi: olgun ürün tarlada bekliyor': '收获季节：成熟的作物在田里等待',
+  'çiftçi: yiyecek toplamak işi': '农民：采集食物是本职',
+  'büyük çocuk ailesine yardım ediyor': '年长的孩子在帮家里',
+  'ganimeti şehre taşıyor': '把战利品运回城里',
+  'hekim: yaralı biri var': '医师：有人受伤',
+  'yaşlı: ocak başında dinleniyor': '老人：在炉边休息',
+  'işinden kaçıp dinleniyor': '放下工作歇一歇',
+  'yapacak acil işi yok': '没有急事可做',
+  'biriyle buluşacak': '要去见一个人',
+  'hamile: eve yakın kalıyor': '怀孕：留在离家近的地方',
+  'topraklarının dışında, eve dönüyor': '在领地之外，正在回家',
+  'sarayda krallığı yönetiyor': '在宫廷治理王国',
+  'ticaret yoluyla komşu krallığa gidiyor': '沿商路前往邻国',
+  'krallığın gizli bir hedefi var': '王国有一个秘密目标',
+  'hamile': '怀孕',
+  'acıkıyor ama başka iş öncelikli': '饿了，但有更优先的事',
+  'çalışkan biri': '是个勤劳的人',
+  'başıboş, rahatına düşkün': '散漫而贪图安逸',
+  'meraklı, gezmeyi seviyor': '好奇，喜欢游历',
+  'kaygılı biri': '是个忧虑的人',
+  'onuruna düşkün': '看重荣誉',
+  'girişken, insanlarla olmayı seviyor': '外向，喜欢与人相处'
+};
+for (const k of Object.keys(i18nReasonEn)) add(k, i18nReasonEn[k], i18nReasonZh[k]);
+
+i18nRule(/^isyancı: (.+?) yönetimini meşru görmüyor \(meşruiyet %(\d+)\)( ve geçim sıkıntısı çekiyor)?$/,
+  m => 'rebel: does not see ' + cleanName(m[1]) + '’s rule as legitimate (legitimacy ' + m[2] + '%)' + (m[3] ? ' and is struggling to make a living' : ''),
+  m => '叛乱者：不认为 ' + cleanName(m[1]) + ' 的统治合法（合法性 ' + m[2] + '%）' + (m[3] ? '，且生计艰难' : ''));
+i18nRule(/^(\d+) yıldır hükümdar(?:; krallığın tutumu ([^·]+?))?(?: · (.+))?$/,
+  m => 'has ruled for ' + m[1] + ' ' + i18nUnitEn('yıl', +m[1]) + (m[2] ? '; the kingdom’s stance is ' + i18nTraitList(m[2], 1) : '') + (m[3] ? ' · ' + i18nCore(m[3], true, false) : ''),
+  m => '已统治 ' + m[1] + ' 年' + (m[2] ? '；王国态度' + i18nTraitList(m[2], 2) : '') + (m[3] ? ' · ' + i18nCore(m[3], true, false) : ''));
+i18nRule(/^acıkmış \(enerji (\d+)\/135\)$/,
+  m => 'hungry (energy ' + m[1] + '/135)',
+  m => '饿了（精力 ' + m[1] + '/135）');
+i18nRule(/^(.+?) savaşta$/, m => cleanName(m[1]) + ' is at war', m => cleanName(m[1]) + ' 正在交战');
+i18nRule(/^işinin başında \((.+?)\)$/, m => 'at work (' + T(m[1]) + ')', m => '在工作中（' + T(m[1]) + '）');
+i18nRule(/^hedefi: (.+)$/, m => 'goal: ' + T(m[1]), m => '目标：' + T(m[1]));
+
+/* ---------- Advisor copy ---------- */
+add('Bir krallığın saray danışmanı olursun. Hedefin', 'You become the court advisor of a kingdom. Your goal is', '你成为一个王国的宫廷顾问。你的目标是');
+add(': nüfus, şehir, toprak ve buluşlarla krallığı Beylikten İmparatorluğa taşı. Birkaç yılda bir hükümdar sana bir ikilem getirir; tavsiyen, hükümdarın',
+  ': grow the kingdom from a Chiefdom to an Empire through population, cities, land and discoveries. Every few years the ruler brings you a dilemma; your advice is followed according to the ruler’s',
+  '：通过人口、城市、领土与发现，将王国从酋邦发展为帝国。每隔几年，统治者会带来一个难题；你的建议会依据统治者的');
+add('göre dinlenir. Kötü tavsiye güveni düşürür.', 'trust. Bad advice lowers trust.', '信任而被采纳。糟糕的建议会降低信任。');
+add('Tavsiyen yaklaşık %', 'Your advice has about a ', '你的建议大约有 ');
+add('% ihtimalle dinlenir.', '% chance of being followed.', '% 的概率被采纳。');
+add('büyüme', 'growth', '成长');
+add('başlangıç = %100', 'start = 100%', '起始 = 100%');
+add('sonraki:', 'next:', '下一阶段：');
+add('en üst rütbe', 'highest rank', '最高等级');
+add('dünyada', 'in the world', '在世界中');
+add('Tavsiyen yaklaşık', 'Your advice has about', '你的建议大约有');
+add('ihtimalle dinlenir.', 'chance of being followed.', '的概率被采纳。');
+add('Karar için ~', 'About ', '距离决定还有约 ');
+add('yıl var; sessiz kalırsan hükümdar kendi bildiğini yapar.', 'years to decide; if you stay silent, the ruler acts alone.', '年；若保持沉默，统治者会自行其是。');
+add('Oyun duraklatıldı: acele etme. Cevap vermeden devam edersen hükümdar kendi bildiğini yapar.',
+  'Game paused: take your time. If you continue without answering, the ruler acts alone.',
+  '游戏已暂停：不必着急。若未作答便继续，统治者会自行其是。');
+add('Hükümdar bir sonraki ikilemi getirmek için yaklaşık', 'The ruler will bring the next dilemma in about', '统治者将在约');
+add('yıl bekliyor…', 'years…', '年后带来下一个难题…');
+add('Verdiğin kararlar', 'Your decisions', '你的决定');
+add('tavsiyen dinlendi:', 'your advice was followed:', '你的建议被采纳：');
+add('tavsiyen (', 'your advice (', '你的建议（');
+add(') reddedildi; hükümdar seçti:', ') was rejected; the ruler chose:', '）被拒绝；统治者选择了：');
+add('karar vermedin; hükümdar seçti:', 'you did not decide; the ruler chose:', '你未作决定；统治者选择了：');
+add('(dünyadaki her şeyin toplamı, yalnız bu karar değil)', '(the sum of everything in the world, not just this decision)', '（世界万物的总和，而非仅此决定）');
+add('Hizmetin sona erdi.', 'Your service has ended.', '你的服务已结束。');
+add('En yüksek rütben:', 'Your highest rank:', '你的最高等级：');
+add('Yeni krallık seç', 'Choose a new kingdom', '选择新王国');
+add('krallık yıkıldı', 'kingdom collapsed', '王国已灭亡');
+add('ayrıl', 'leave', '离开');
+add('Danışmanlıktan ayrılmak istiyor musun?', 'Do you want to leave the advisor role?', '你想辞去顾问职位吗？');
+add('hükümdar:', 'ruler:', '统治者：');
+add('Hangi krallığa hizmet edeceksin?', 'Which kingdom will you serve?', '你要效忠于哪个王国？');
+add('Danışman ol', 'Become advisor', '成为顾问');
+add('hükümdarın güveni', 'ruler’s trust', '统治者的信任');
+add('risk: yüksek', 'risk: high', '风险：高');
+add('risk: orta', 'risk: medium', '风险：中');
+add('risk: düşük', 'risk: low', '风险：低');
+add('risk: —', 'risk: —', '风险：—');
+add('şu an uygulanamaz', 'cannot be applied now', '目前无法实施');
+add('uygun taraf yok', 'no suitable side', '没有合适的一方');
+add('uygun yer bulunamadı', 'no suitable site found', '未找到合适地点');
+add('yeni şehir kuruldu', 'a new city was founded', '新城市已建立');
+add('Hükümdar savaşa hevesli.', 'The ruler is eager for war.', '统治者渴望战争。');
+add('16 göçmen kabul edildi', '16 migrants were accepted', '16 名移民被接纳');
+
+i18nRule(/^büyüme (\d+)% \(başlangıç = %100\)$/,
+  m => 'growth ' + m[1] + '% (start = 100%)', m => '成长 ' + m[1] + '%（起始 = 100%）');
+i18nRule(/^sonraki: (.+?) \(%(\d+)\)$/,
+  m => 'next: ' + T(m[1]) + ' (' + m[2] + '%)', m => '下一阶段：' + T(m[1]) + '（' + m[2] + '%）');
+i18nRule(/^dünyada (\d+)\.$/, m => '#' + m[1] + ' in the world', m => '世界第 ' + m[1] + ' 位');
+i18nRule(/^şans ~%(\d+)$/, m => 'chance ~' + m[1] + '%', m => '概率约 ' + m[1] + '%');
+i18nRule(/^hazine yetersiz \((\d+)\)$/, m => 'not enough treasury (' + m[1] + ')', m => '国库不足（' + m[1] + '）');
+i18nRule(/^Tavsiyen yaklaşık %(\d+) ihtimalle dinlenir\.$/,
+  m => 'Your advice has about a ' + m[1] + '% chance of being followed.',
+  m => '你的建议大约有 ' + m[1] + '% 的概率被采纳。');
+i18nRule(/^Karar için ~([\d.]+) yıl var; sessiz kalırsan hükümdar kendi bildiğini yapar\.$/,
+  m => 'About ' + m[1] + ' years to decide; if you stay silent, the ruler acts alone.',
+  m => '距离决定还有约 ' + m[1] + ' 年；若保持沉默，统治者会自行其是。');
+i18nRule(/^Hükümdar bir sonraki ikilemi getirmek için yaklaşık ([\d.]+) yıl bekliyor…$/,
+  m => 'The ruler will bring the next dilemma in about ' + m[1] + ' years…',
+  m => '统治者将在约 ' + m[1] + ' 年后带来下一个难题…');
+i18nRule(/^tavsiyen \((.+?)\) reddedildi; hükümdar seçti:$/,
+  m => 'your advice (' + T(m[1]) + ') was rejected; the ruler chose:',
+  m => '你的建议（' + T(m[1]) + '）被拒绝；统治者选择了：');
+i18nRule(/^5 yıl sonra büyüme %(\d+) → %(\d+)$/,
+  m => 'growth after 5 years ' + m[1] + '% → ' + m[2] + '%',
+  m => '5 年后成长 ' + m[1] + '% → ' + m[2] + '%');
+i18nRule(/^5 yıl sonra büyümeye bakılacak \(şimdi %(\d+)\)$/,
+  m => 'growth will be checked after 5 years (now ' + m[1] + '%)',
+  m => '将在 5 年后查看成长（当前 ' + m[1] + '%）');
+
+/* ---------- Advisor card bodies ---------- */
+i18nRule(/^(.+?) ile savaş sürüyor \(onların nüfusu (\d+), bizimki (\d+); yorgunluk %(\d+)\)\. Hükümdar savaşın sonunu soruyor\.$/,
+  m => 'The war with ' + T(m[1]) + ' continues (their population ' + m[2] + ', ours ' + m[3] + '; weariness ' + m[4] + '%). The ruler asks how to end it.',
+  m => '与 ' + T(m[1]) + ' 的战争仍在继续（他们的人口 ' + m[2] + '，我们 ' + m[3] + '；厌战 ' + m[4] + '%）。统治者询问如何结束战争。');
+i18nRule(/^Savaş sürüyor\.$/, () => 'The war continues.', () => '战争仍在继续。');
+i18nRule(/^Hükümdar, (.+?) ile aranızdaki anlaşmayı bozup sürpriz saldırı düzenlemek istiyor\. \(Güç oranımız ([\d.]+); ihanet itibarı çökertir\.\)$/,
+  m => 'The ruler wants to break your agreement with ' + T(m[1]) + ' and launch a surprise attack. (Our power ratio is ' + m[2] + '; betrayal ruins reputation.)',
+  m => '统治者想撕毁你与 ' + T(m[1]) + ' 的协议并发动突袭。（我们的力量比是 ' + m[2] + '；背叛会毁掉声誉。）');
+i18nRule(/^Hükümdar (.+?)'a savaş açmak istiyor\. \(Güç oranımız ([\d.]+), onların nüfusu (\d+), bizimki (\d+)\.\)$/,
+  m => 'The ruler wants to declare war on ' + cleanName(m[1]) + '. (Our power ratio is ' + m[2] + ', their population ' + m[3] + ', ours ' + m[4] + '.)',
+  m => '统治者想向 ' + cleanName(m[1]) + ' 宣战。（我们的力量比是 ' + m[2] + '，他们的人口 ' + m[3] + '，我们 ' + m[4] + '。）');
+i18nRule(/^Hükümdar, (.+?) tarlalarında verimin düştüğünden yakınıyor: "Nüfus büyüyor ama ekin yetişmiyor\."$/,
+  m => 'The ruler complains that yields are falling in the fields of ' + T(m[1]) + ': “The population grows, but the crops do not.”',
+  m => '统治者抱怨 ' + T(m[1]) + ' 的田地收成下降：“人口在增长，庄稼却长不好。”');
+i18nRule(/^Saray sayımı: (\d+) kişi\. Hükümdar halkı çoğaltmanın yollarını soruyor\.$/,
+  m => 'Court census: ' + m[1] + ' people. The ruler asks how to grow the population.',
+  m => '宫廷人口普查：' + m[1] + ' 人。统治者询问如何增加人口。');
+i18nRule(/^Casuslar haber getirdi: (.+?) zayıf düştü\. Hükümdar fırsatı değerlendirmek istiyor\.$/,
+  m => 'Spies report: ' + T(m[1]) + ' has weakened. The ruler wants to seize the opportunity.',
+  m => '密探来报：' + T(m[1]) + ' 已衰弱。统治者想抓住机会。');
+i18nRule(/^(.+?) güçlü ve gergin\. Elçiler sınırda ordu toplandığını söylüyor\.$/,
+  m => T(m[1]) + ' is strong and tense. Envoys say an army is gathering at the border.',
+  m => T(m[1]) + ' 强大而紧张。使节称边境正在集结军队。');
+i18nRule(/^Hazinede (\d+) altın var\. Hükümdar vergi politikasında danışmanlığını istiyor\.$/,
+  m => 'The treasury holds ' + m[1] + ' gold. The ruler asks your advice on tax policy.',
+  m => '国库有 ' + m[1] + ' 金币。统治者就税收政策征求你的建议。');
+i18nRule(/^Ambarlar boşalıyor \(doluluk %(\d+)\)\. Hükümdar halkın aç kalmasından korkuyor\.$/,
+  m => 'The granaries are emptying (' + m[1] + '% full). The ruler fears the people will starve.',
+  m => '粮仓正在见底（储粮 ' + m[1] + '%）。统治者担心民众挨饿。');
+i18nRule(/^(.+?) ülkesinde salgın var\. Şifacılar yetişemiyor\.$/,
+  m => 'An epidemic grips ' + cleanName(m[1]) + '. The healers cannot keep up.',
+  m => cleanName(m[1]) + ' 正爆发瘟疫。医师们应接不暇。');
+i18nRule(/^Halk arasında homurdanma artıyor \(huzursuzluk %(\d+)\)\.$/,
+  m => 'Grumbling is growing among the people (unrest ' + m[1] + '%).',
+  m => '民众的抱怨在增加（动荡 ' + m[1] + '%）。');
+i18nRule(/^Hazinede (\d+) altın ve boş verimli topraklar var\. Hükümdar genişlemeyi düşünüyor\.$/,
+  m => 'The treasury holds ' + m[1] + ' gold and there is empty fertile land. The ruler considers expansion.',
+  m => '国库有 ' + m[1] + ' 金币，还有空置的肥沃土地。统治者在考虑扩张。');
+i18nRule(/^Hazinede (\d+) altın birikti\. Yatırım zamanı mı\?$/,
+  m => m[1] + ' gold has piled up in the treasury. Is it time to invest?',
+  m => '国库已积攒 ' + m[1] + ' 金币。是时候投资了吗？');
+i18nRule(/^(.+?) yaşlandı\. Sarayda varis kavgaları konuşuluyor\.$/,
+  m => cleanName(m[1]) + ' has grown old. Talk of succession quarrels fills the court.',
+  m => cleanName(m[1]) + ' 已年迈。宫廷中议论着继承之争。');
+
+/* ---------- Advisor outcome messages ---------- */
+i18nRule(/^(.+?) ile barış yapıldı$/, m => 'peace was made with ' + T(m[1]), m => '与 ' + T(m[1]) + ' 达成和平');
+i18nRule(/^(.+?)'a savaş açıldı$/, m => 'war was declared on ' + cleanName(m[1]), m => '向 ' + cleanName(m[1]) + ' 宣战');
+i18nRule(/^(.+?) ile gerginlik yatıştı$/, m => 'tensions eased with ' + T(m[1]), m => '与 ' + T(m[1]) + ' 的紧张局势缓和');
+i18nRule(/^(\d+) göçmen aileyi krallığa katıldı$/, m => m[1] + ' migrant ' + (+m[1] === 1 ? 'family' : 'families') + ' joined the kingdom', m => m[1] + ' 个移民家庭加入了王国');
+i18nRule(/^(.+?) ile ittifak kuruldu$/, m => 'an alliance was formed with ' + T(m[1]), m => '与 ' + T(m[1]) + ' 缔结联盟');
+i18nRule(/^(.+?) yatıştı, iki yıllık ateşkes$/, m => T(m[1]) + ' was appeased; two-year truce', m => T(m[1]) + ' 被安抚；两年停战');
+i18nRule(/^(.+?) ile akrabalık ittifakı kuruldu$/, m => 'a marriage alliance was formed with ' + T(m[1]), m => '与 ' + T(m[1]) + ' 缔结联姻联盟');
+i18nRule(/^(\d+) göçmen kabul edildi$/, m => m[1] + ' ' + (+m[1] === 1 ? 'migrant was' : 'migrants were') + ' accepted', m => m[1] + ' 名移民被接纳');
+
+add('barış şansı (yorgunluğa bağlı)', 'chance of peace (depends on weariness)', '和平概率（取决于厌战度）');
+i18nRule(/^hazine −(\d+)$/, m => 'treasury −' + m[1], m => '国库 −' + m[1]);
+i18nRule(/^%(\d+)$/, m => m[1] + '%', m => m[1] + '%');
+i18nRule(/^([✔✘]) (.+)$/, m => m[1] + ' ' + T(m[2]), m => m[1] + ' ' + T(m[2]));
+i18nRule(/^📜 (.+)$/, m => '📜 ' + T(m[1]), m => '📜 ' + T(m[1]));
+
+add('komşu', 'neighbor', '邻国');
+i18nRule(/^Komşu bir diyardan zengin bir kervancı sarayda: "Ticaret yolu açarsak iki taraf da kazanır\."$/,
+  () => 'A rich merchant from a neighboring land stands in the court: “If we open a trade route, both sides win.”',
+  () => '一位来自邻国的富商来到宫廷：“若开通商路，双方都能获益。”');
+i18nRule(/^Saray âlimleri bir kütüphane ve medrese istiyor: "Bilgi, krallığın en büyük hazinesidir\."$/,
+  () => 'The court scholars ask for a library and a college: “Knowledge is the kingdom’s greatest treasure.”',
+  () => '宫廷学者请求建立图书馆和学院：“知识是王国最宝贵的财富。”');
+i18nRule(/^Kıtlıktan kaçan bir kafile sınırda bekliyor: aç, yorgun ama çalışkan insanlar\.$/,
+  () => 'A caravan fleeing famine waits at the border: hungry, tired, but hard-working people.',
+  () => '一群逃离饥荒的人等在边境：饥饿、疲惫，却勤劳。');
+
+i18nRule(/^(.+?) ile ticaret anlaşması imzalandı$/, m => 'a trade agreement was signed with ' + T(m[1]), m => '与 ' + T(m[1]) + ' 签署了贸易协定');
+i18nRule(/^(?:⇄\s*)?(.+?) ↔ (.+?) ticaret anlaşması \(danışman önerisi\)$/, m => (m[0].startsWith('⇄')?'⇄ ':'') + T(m[1]) + ' ↔ ' + T(m[2]) + ' trade agreement (advisor’s proposal)', m => (m[0].startsWith('⇄')?'⇄ ':'') + T(m[1]) + ' ↔ ' + T(m[2]) + ' 贸易协定（顾问提议）');
+i18nRule(/^(?:🤝\s*)?(.+?) ↔ (.+?) ittifak kurdu \(danışman önerisi\)$/, m => (m[0].startsWith('🤝')?'🤝 ':'') + T(m[1]) + ' ↔ ' + T(m[2]) + ' formed an alliance (advisor’s proposal)', m => (m[0].startsWith('🤝')?'🤝 ':'') + T(m[1]) + ' ↔ ' + T(m[2]) + ' 缔结联盟（顾问提议）');
+i18nRule(/^(?:🤝\s*)?(.+?) ↔ (.+?) ittifak kurdu \(saray evliliği\)$/, m => (m[0].startsWith('🤝')?'🤝 ':'') + T(m[1]) + ' ↔ ' + T(m[2]) + ' formed an alliance (palace marriage)', m => (m[0].startsWith('🤝')?'🤝 ':'') + T(m[1]) + ' ↔ ' + T(m[2]) + ' 缔结联盟（宫廷联姻）');
+
+/* ---------- Person card & list fragments ---------- */
+i18nRule(/^anılar: (.+)$/, m => 'memories: ' + m[1].split(' · ').map(x => T(x)).join(' · '), m => '记忆：' + m[1].split(' · ').map(x => T(x)).join(' · '));
+i18nRule(/^[▾▴] (.+?) [（(]Y(\d+)[）)]$/, m => (/\u25be/.test(m[0]) ? '▾ ' : '▴ ') + T(m[1]) + ' (Y' + m[2] + ')', m => (/\u25be/.test(m[0]) ? '▾ ' : '▴ ') + T(m[1]) + '（Y' + m[2] + '）');
+i18nRule(/^hükümdar: (.+?) \((.+?)\)$/, m => 'ruler: ' + m[1] + ' (' + i18nTraitList(m[2], 1) + ')', m => '统治者：' + m[1] + '（' + i18nTraitList(m[2], 2) + '）');
+i18nRule(/^hükümdar: (.+)$/, m => 'ruler: ' + T(m[1]), m => '统治者：' + T(m[1]));
+i18nRule(/^◈ (.+)$/, m => '◈ ' + T(m[1]), m => '◈ ' + T(m[1]));
+i18nRule(/^(.+?), (.+)$/, m => {
+  const a = T(m[1]), b = T(m[2]);
+  if (a !== m[1] && b !== m[2]) return a + ', ' + b;
+  return null;
+}, m => {
+  const a = T(m[1]), b = T(m[2]);
+  if (a !== m[1] && b !== m[2]) return a + '，' + b;
+  return null;
+});
+i18nRule(/^(.+?) \((.+?)\)$/, m => {
+  const a = T(m[1]);
+  if (a === m[1]) return null;
+  return a + ' (' + T(m[2]) + ')';
+}, m => {
+  const a = T(m[1]);
+  if (a === m[1]) return null;
+  return a + '（' + T(m[2]) + '）';
+});
+i18nRule(/^(.+?) · (.+?) · (.+)$/, m => {
+  const a = i18nCore(m[1], true, false), b = i18nCore(m[2], true, false), c = i18nCore(m[3], true, false);
+  if (a === m[1] && b === m[2] && c === m[3]) return null;
+  return a + ' · ' + b + ' · ' + c;
+}, m => {
+  const a = i18nCore(m[1], true, false), b = i18nCore(m[2], true, false), c = i18nCore(m[3], true, false);
+  if (a === m[1] && b === m[2] && c === m[3]) return null;
+  return a + ' · ' + b + ' · ' + c;
+});
+i18nRule(/^(\d+) yaş$/, m => 'age ' + m[1], m => m[1] + ' 岁');
+i18nRule(/^Y(\d+), ([\d.]+) yaşında$/, m => 'Y' + m[1] + ', age ' + m[2], m => 'Y' + m[1] + '，' + m[2] + ' 岁');
+i18nRule(/^Y(\d+), ([\d.]+) yaşında, (.+)$/, m => 'Y' + m[1] + ', age ' + m[2] + ', ' + T(m[3]), m => 'Y' + m[1] + '，' + m[2] + ' 岁，' + T(m[3]));
+
+i18nRule(/^anılar: (.+)$/, m => 'memories: ' + T(m[1]), m => '记忆：' + T(m[1]));
+i18nRule(/^[▾▴] (.+?) \(Y(\d+)\)$/, m => (/\u25be/.test(m[0]) ? '▾ ' : '▴ ') + T(m[1]) + ' (Y' + m[2] + ')', m => (/\u25be/.test(m[0]) ? '▾ ' : '▴ ') + T(m[1]) + '（Y' + m[2] + '）');
+i18nRule(/^hedefi: (.+)$/, m => 'goal: ' + T(m[1]), m => '目标：' + T(m[1]));
+i18nRule(/^gösterilen hedef: (.+)$/, m => 'displayed goal: ' + T(m[1]), m => '显示目标：' + T(m[1]));
+i18nRule(/^ölüm: (.+)$/, m => 'death: ' + T(m[1]), m => '死亡：' + T(m[1]));
+i18nRule(/^katili (.+)$/, m => 'killer ' + T(m[1]), m => '凶手 ' + T(m[1]));
+i18nRule(/^kuruluş öncesi$/, () => 'before the founding', () => '建国前');
+i18nRule(/^kuruluş öncesi · (.+)$/, m => 'before the founding · ' + T(m[1]), m => '建国前 · ' + T(m[1]));
+i18nRule(/^Yıl (\d+): (.+)\.$/, m => 'Year ' + m[1] + ': ' + T(m[2]) + '.', m => '第 ' + m[1] + ' 年：' + T(m[2]) + '。');
+i18nRule(/^Yıl (\d+): (.+)$/, m => 'Year ' + m[1] + ': ' + T(m[2]), m => '第 ' + m[1] + ' 年：' + T(m[2]));
+i18nRule(/^Yıl (\d+) — (.+)$/, m => 'Year ' + m[1] + ' — ' + T(m[2]), m => '第 ' + m[1] + ' 年 — ' + T(m[2]));
+i18nRule(/^Y(\d+) · (.+)$/, m => 'Y' + m[1] + ' · ' + T(m[2]), m => 'Y' + m[1] + ' · ' + T(m[2]));
+
+/* Life-prose sentences */
+i18nRule(/^(.+?) halkının (\d+)\. neslinden (.+?); (.+?) biriydi\.$/,
+  m => 'A member of generation ' + m[2] + ' of the people of ' + T(m[1]) + ': ' + m[3] + ' — ' + T(m[4]) + '.',
+  m => T(m[1]) + ' 民众第 ' + m[2] + ' 代：' + m[3] + '——' + T(m[4]) + '。');
+i18nRule(/^(.+?) halkının (\d+)\. neslinden (.+?); (.+?) biri\.$/,
+  m => 'A member of generation ' + m[2] + ' of the people of ' + T(m[1]) + ': ' + m[3] + ' — ' + T(m[4]) + '.',
+  m => T(m[1]) + ' 民众第 ' + m[2] + ' 代：' + m[3] + '——' + T(m[4]) + '。');
+i18nRule(/^Şimdiye dek (\d+) düşman devirdi\.$/,
+  m => 'So far they have defeated ' + m[1] + ' enemies.',
+  m => '迄今为止击败了 ' + m[1] + ' 名敌人。');
+i18nRule(/^(\d+) çocuğu oldu(?: \(eşi (.+?)\))?\.$/,
+  m => 'They had ' + m[1] + ' children' + (m[2] ? ' (spouse ' + m[2] + ')' : '') + '.',
+  m => '他们有 ' + m[1] + ' 个孩子' + (m[2] ? '（配偶 ' + m[2] + '）' : '') + '。');
+i18nRule(/^En çok aklında kalan: (.+?) \(Yıl (\d+)\)\.$/,
+  m => 'What remains most in their mind: ' + T(m[1]) + ' (Year ' + m[2] + ').',
+  m => '最难忘的是：' + T(m[1]) + '（第 ' + m[2] + ' 年）。');
+
+/* Watch / death */
+i18nRule(/^† (.+?) öldü$/, m => '† ' + m[1] + ' died', m => '† ' + m[1] + ' 去世');
+
+/* ---------- Stats / legends fragments ---------- */
+i18nRule(/^(.+?) eski krallık düştü$/, m => m[1] + ' old kingdoms fell', m => m[1] + ' 个旧王国灭亡');
+i18nRule(/^(.+?) \(başkent\)$/, m => T(m[1]) + ' (capital)', m => T(m[1]) + '（首都）');
+i18nRule(/^(.+?) krallığından ayrıldı$/, m => T(m[1]) + ' split from the kingdom', m => T(m[1]) + ' 脱离王国');
+i18nRule(/^(.+?) hükümdarı$/, m => 'ruler of ' + T(m[1]), m => T(m[1]) + ' 的统治者');
+i18nRule(/^hanedan (.+)$/, m => 'dynasty ' + T(m[1]), m => '王朝 ' + T(m[1]));
+i18nRule(/^nüfus (.+)$/, m => 'population ' + T(m[1]), m => '人口 ' + T(m[1]));
+i18nRule(/^en yüksek nüfus (.+)$/, m => 'peak population ' + T(m[1]), m => '最高人口 ' + T(m[1]));
+i18nRule(/^şehir (.+)$/, m => 'cities ' + T(m[1]), m => '城市 ' + T(m[1]));
+i18nRule(/^çağ (.+)$/, m => 'era ' + T(m[1]), m => '时代 ' + T(m[1]));
+i18nRule(/^(\d+) savaş kaydı$/, m => m[1] + ' ' + i18nUnitEn('savaş kaydı', +m[1]), m => m[1] + ' 条战争记录');
+i18nRule(/^(\d+) kişi öldürüldü$/, m => m[1] + ' ' + i18nUnitEn('kişi', +m[1]) + ' killed', m => m[1] + ' 人死亡');
+i18nRule(/^(\d+) efsane · yıl (\d+)$/, m => m[1] + ' ' + i18nUnitEn('efsane', +m[1]) + ' · year ' + m[2], m => m[1] + ' 位传奇 · 第 ' + m[2] + ' 年');
+i18nRule(/^(\d+) kayıt · (.+)$/, m => m[1] + ' ' + i18nUnitEn('kayıt', +m[1]) + ' · ' + T(m[2]), m => m[1] + ' 条记录 · ' + T(m[2]));
+i18nRule(/^Y(\d+) – Y(\d+) \(([\d.]+) yıl\)$/, m => 'Y' + m[1] + ' – Y' + m[2] + ' (' + m[3] + ' years)', m => 'Y' + m[1] + ' – Y' + m[2] + '（' + m[3] + ' 年）');
+i18nRule(/^Y(\d+) \(([\d.]+) yıl\)$/, m => 'Y' + m[1] + ' (' + m[2] + ' years)', m => 'Y' + m[1] + '（' + m[2] + ' 年）');
+i18nRule(/^Y(\d+) →$/, m => 'Y' + m[1] + ' →', m => 'Y' + m[1] + ' →');
+i18nRule(/^Y(\d+) yaş$/, m => 'age ' + m[1], m => m[1] + ' 岁');
+i18nRule(/^Y(\d+) yaşında$/, m => 'age ' + m[1], m => m[1] + ' 岁');
+i18nRule(/^Y(\d+)$/, m => 'Y' + m[1], m => 'Y' + m[1]);
+i18nRule(/^(\d+) ölü$/, m => m[1] + ' dead', m => m[1] + ' 人死亡');
+i18nRule(/^(\d+) şehir hasar gördü, (\d+) ölü$/, m => m[1] + ' ' + i18nUnitEn('şehir', +m[1]) + ' damaged, ' + m[2] + ' dead', m => m[1] + ' 座城市受损，' + m[2] + ' 人死亡');
+i18nRule(/^(.+?) yıldırımla öldü$/, m => T(m[1]) + ' was struck by lightning', m => T(m[1]) + ' 被闪电击中身亡');
+i18nRule(/^(.+?) salgına yakalandı$/, m => T(m[1]) + ' was struck by an epidemic', m => T(m[1]) + ' 遭遇瘟疫');
+i18nRule(/^(.+?) ilham aldı$/, m => T(m[1]) + ' received inspiration', m => T(m[1]) + ' 获得启迪');
+i18nRule(/^(.+?) yatıştı, iki yıllık ateşkes$/, m => T(m[1]) + ' was appeased; two-year truce', m => T(m[1]) + ' 被安抚；两年停战');
+i18nRule(/^(.+?) yükseldi: (.+?)!$/, m => T(m[1]) + ' rose to ' + T(m[2]) + '!', m => T(m[1]) + ' 晋升为' + T(m[2]) + '！');
+i18nRule(/^(.+?) yıkıldı: danışmanlığın sona erdi \(en yüksek rütben: (.+?)\)$/,
+  m => T(m[1]) + ' collapsed: your service ended (highest rank: ' + T(m[2]) + ')',
+  m => T(m[1]) + ' 灭亡：你的服务结束（最高等级：' + T(m[2]) + '）');
+i18nRule(/^🎩 Hükümdar seni çağırıyor: (.+)$/, m => '🎩 The ruler summons you: ' + T(m[1]), m => '🎩 统治者召见你：' + T(m[1]));
+i18nRule(/^🎩 (.+?) yükseldi: (.+?)!$/, m => '🎩 ' + T(m[1]) + ' rose to ' + T(m[2]) + '!', m => '🎩 ' + T(m[1]) + ' 晋升为' + T(m[2]) + '！');
+
+/* ---------- Yearly summary ---------- */
+i18nRule(/^\+d doğum · −ö ölüm · ♥ evlilik · ⚔ savaş ilanı · ⚑ isyan\/darbe\/yıkılış · ♛ tahta çıkış · ☠ kıtlık\/salgın$/,
+  () => '+d births · −d deaths · ♥ marriages · ⚔ declarations of war · ⚑ rebellion/coup/collapse · ♛ accessions · ☠ famine/epidemic',
+  () => '+d 出生 · −d 死亡 · ♥ 婚姻 · ⚔ 宣战 · ⚑ 叛乱/政变/灭亡 · ♛ 登基 · ☠ 饥荒/瘟疫');
+
+/* ---------- Tech / culture tree tips ---------- */
+i18nRule(/^(.+?) \((edinildi|araştırılabilir|kilitli)\)\n(.+?)(?:\nÖn koşul: (.+))?$/,
+  m => T(m[1]) + ' (' + T(m[2]) + ')\n' + i18nEffectList(m[3], 1) + (m[4] ? '\nPrerequisite: ' + i18nEffectList(m[4], 1) : ''),
+  m => T(m[1]) + '（' + T(m[2]) + '）\n' + i18nEffectList(m[3], 2) + (m[4] ? '\n前置条件：' + i18nEffectList(m[4], 2) : ''));
+i18nRule(/^(.+?) \((edinildi|araştırılabilir|kilitli)\)$/,
+  m => T(m[1]) + ' (' + T(m[2]) + ')', m => T(m[1]) + '（' + T(m[2]) + '）');
+i18nRule(/^(.+?) ✓$/, m => T(m[1]) + ' ✓', m => T(m[1]) + ' ✓');
+i18nRule(/^(.+?) ☠$/, m => T(m[1]) + ' ☠', m => T(m[1]) + ' ☠');
+i18nRule(/^🔒 (.+)$/, m => '🔒 ' + T(m[1]), m => '🔒 ' + T(m[1]));
+function i18nEffectList(text, idx) {
+  if (!text) return '';
+  return String(text).split(/,\s*/).map(part => T(part)).join(idx === 2 ? '，' : ', ');
+}
+
+/* ---------- God result / toast ---------- */
+i18nRule(/^([🌧✚✨⚡🌋☠] .+?): (.+)$/, m => T(m[1]) + ': ' + T(m[2]), m => T(m[1]) + '：' + T(m[2]));
+i18nRule(/^(.+?) kişi iyileşti$/, m => m[1] + ' ' + i18nUnitEn('kişi', +m[1]) + ' healed', m => m[1] + ' 人痊愈');
+i18nRule(/^(.+?) şehir hasar gördü, (\d+) ölü$/, m => m[1] + ' ' + i18nUnitEn('şehir', +m[1]) + ' damaged, ' + m[2] + ' dead', m => m[1] + ' 座城市受损，' + m[2] + ' 人死亡');
+i18nRule(/^(.+?) \((.+?), hükümdar\)$/, m => T(m[1]) + ' (' + T(m[2]) + ', ruler)', m => T(m[1]) + '（' + T(m[2]) + '，统治者）');
+
+/* ---------- Director captions ---------- */
+i18nRule(/^🎬 (.+)$/, m => '🎬 ' + T(m[1]), m => '🎬 ' + T(m[1]));
+i18nRule(/^Yıl (\d+) · (\d+) krallık, (\d+) kişi\. Yönetmen modu açık: kamera ilginç anları izler\.$/,
+  m => 'Year ' + m[1] + ' · ' + m[2] + ' kingdoms, ' + m[3] + ' people. Director mode is on: the camera follows interesting moments.',
+  m => '第 ' + m[1] + ' 年 · ' + m[2] + ' 个王国，' + m[3] + ' 人。导演模式已开启：镜头追随有趣时刻。');
+i18nRule(/^Çatışma: (.+?) \((\d+) savaşçı\)$/,
+  m => 'Clash: ' + T(m[1]) + ' (' + m[2] + ' fighters)',
+  m => '冲突：' + T(m[1]) + '（' + m[2] + ' 名战士）');
+i18nRule(/^Genel bakış: krallıkların durumu$/,
+  () => 'Overview: the state of the kingdoms', () => '概览：王国状况');
+i18nRule(/^(.+?): (.+?) — (.+)$/, m => m[1] + ': ' + T(m[2]) + ' — ' + T(m[3]), m => m[1] + '：' + T(m[2]) + ' — ' + T(m[3]));
+
+function i18nTraitList(text, idx) {
+  return String(text).split(/,\s*/).map(x => T(x)).join(idx === 2 ? '、' : ', ');
+}
+i18nRule(/^gerçek hız ≈([\d.]+)×$/, m => 'actual speed ≈' + m[1] + '×', m => '实际速度 ≈' + m[1] + '×');
+i18nRule(/^(.+?) tarafından öldürüldü$/, m => cleanName(m[1]) + ' killed them', m => '被 ' + cleanName(m[1]) + ' 杀害');
+i18nRule(/^(.+?) öldü$/, m => {
+  const c = m[1];
+  if (/öldü|hastalık|yaşlılık|açlık|doğum|gazap/.test(c)) return cleanName(c) + ' died';
+  return null;
+}, m => {
+  const c = m[1];
+  if (/öldü|hastalık|yaşlılık|açlık|doğum|gazap/.test(c)) return cleanName(c) + ' 去世';
+  return null;
+});
+i18nRule(/^† (.+)$/, m => '† ' + T(m[1]), m => '† ' + T(m[1]));
+
+/* ===================== Static chrome, labels, tooltips ===================== */
+add('her birey bir hayat', 'every individual is a life', '每个个体都是一段人生');
+add('İncele', 'Inspect', '查看');
+add('Yıllık özet', 'Yearly summary', '年度总结');
+add('Hikâyeler', 'Stories', '故事');
+add('İlahi eller', 'Divine hands', '神明之手');
+add('Halk', 'People', '民众');
+add('Ölçümler', 'Measurements', '测量');
+add('Efsaneler', 'Legends', '传奇');
+add('Ayarlar', 'Settings', '设置');
+add('Görünüm', 'Appearance', '外观');
+add('Kısayollar', 'Shortcuts', '快捷键');
+add('NASIL İZLENİR?', 'HOW TO WATCH?', '如何观看？');
+add('Son olaylar', 'Recent events', '最近事件');
+add('Tüm olaylar için 📜 Tarih → Olaylar', 'For all events: 📜 History → Events', '查看全部事件：📜 历史 → 事件');
+add('Haritada bir figüre tıkla.', 'Click a figure on the map.', '点击地图上的一个身影。');
+add('Haritada bir figüre tıkla, ', 'Click a figure on the map, ', '点击地图上的一个身影，');
+add(' sekmesinden birini seç ya da ', ' tab, or ', ' 标签页选择一人，或');
+add(' göster.', '.', '。');
+add('🎲 ilginç bir kişi', '🎲 interesting person', '🎲 有趣的人');
+add('Her yıl en ilginç olaylar burada belirir.', 'The most interesting events of each year appear here.', '每年最有趣的事件会在这里出现。');
+add('Yıl sonunda burada özet belirir.', 'A summary appears here at the end of each year.', '每年结束时这里会出现总结。');
+
+/* Header / tooltips */
+add('Hız', 'Speed', '速度');
+add('Duraklat / oynat (Boşluk)', 'Pause / play (Space)', '暂停 / 播放（空格）');
+add('Tek adım', 'Single step', '单步');
+add('Yönetmen modu: kamera ilginç anlara gider (D)', 'Director mode: the camera follows interesting moments (D)', '导演模式：镜头追随有趣时刻（D）');
+add('Bilim ağacı', 'Tech tree', '科技树');
+add('Kültür ağacı', 'Culture tree', '文化树');
+add('Krallıkların tarihi', 'History of the kingdoms', '王国历史');
+add('Tüm olaylar', 'All events', '全部事件');
+add('Seed: aynı seed = aynı tarih', 'Seed: same seed = same history', '种子：相同种子 = 相同历史');
+add('Yeni rastgele seed ile başlat', 'Start with a new random seed', '用新的随机种子开始');
+add('Aynı seed ile baştan başlat', 'Restart with the same seed', '用相同种子重新开始');
+add('Mini harita: tıkla / sürükle', 'Minimap: click / drag', '小地图：点击 / 拖动');
+add('Seçili bireyi kamera izlesin (F)', 'Camera follows the selected individual (F)', '镜头跟随选中个体（F）');
+add('Kamera takibi', 'Camera follow', '镜头跟随');
+add('🔍 Kamera takibi', '🔍 Camera follow', '🔍 镜头跟随');
+add('· çocuk', '· child', '· 儿童');
+add('● çiftçi', '● farmer', '● 农民');
+add('▲ asker', '▲ soldier', '▲ 士兵');
+add('✚ hekim', '✚ physician', '✚ 医师');
+add('◆ tüccar', '◆ merchant', '◆ 商人');
+add('✦ casus', '✦ spy', '✦ 密探');
+add('⚒ zanaatkâr', '⚒ artisan', '⚒ 工匠');
+add('☩ rahip', '☩ priest', '☩ 祭司');
+add('◯ isyancı', '◯ rebel', '◯ 叛乱者');
+add('Kamera', 'Camera', '镜头');
+add('🔍 Kamera', '🔍 Camera', '🔍 镜头');
+add('Sayfası', 'Page', '页面');
+add('📜 Sayfası', '📜 Page', '📜 页面');
+add('★ İzleme listesinde', '★ On watch list', '★ 已在关注列表');
+add('☆ İzleme listesine ekle', '☆ Add to watch list', '☆ 加入关注列表');
+
+/* Settings */
+add('Yiyecek', 'Food', '食物');
+add('Savaşçılık', 'Aggression', '好战度');
+add('Bilim & Kültür Hızı', 'Science & Culture Speed', '科技与文化速度');
+add('Krallık Sayısı', 'Number of Kingdoms', '王国数量');
+add('(sıfırlamada)', '(on reset)', '（重置时）');
+add('oto', 'auto', '自动');
+add('Yazı boyutu', 'Font size', '字体大小');
+add('Yüksek kontrast', 'High contrast', '高对比度');
+add('Hareketi azalt', 'Reduce motion', '减少动态效果');
+add('Olay bildirimlerini kapat', 'Turn off event notifications', '关闭事件通知');
+add('Başlangıçta önceden oynat', 'Pre-play at start', '开始时预播');
+add('hiç (sıfırdan başla)', 'none (start from scratch)', '无（从零开始）');
+add('15 yıl', '15 years', '15 年');
+add('30 yıl', '30 years', '30 年');
+add('30 yıl (önerilen)', '30 years (recommended)', '30 年（推荐）');
+add('50 yıl', '50 years', '50 年');
+add('Turu yeniden göster', 'Show the tour again', '重新显示导览');
+add('❔ Turu yeniden göster', '❔ Show the tour again', '❔ 重新显示导览');
+add('yok', 'none', '无');
+add('çok kıt', 'very scarce', '极度匮乏');
+add('kıt', 'scarce', '匮乏');
+add('orta', 'medium', '适中');
+add('bol', 'plentiful', '充足');
+add('çok bol', 'very plentiful', '非常充足');
+add('bereket', 'abundance', '丰饶');
+
+/* Overlays */
+add('✕ Kapat', '✕ Close', '✕ 关闭');
+add('📜 Tarih Kitabı', '📜 Book of History', '📜 历史之书');
+add('⚙ Bilim Ağacı', '⚙ Tech Tree', '⚙ 科技树');
+add('◈ Kültür Ağacı', '◈ Culture Tree', '◈ 文化树');
+add('📖 Vakayiname', '📖 Chronicle', '📖 编年史');
+add('Tarih Kitabı', 'Book of History', '历史之书');
+add('Bilim Ağacı', 'Tech Tree', '科技树');
+add('Kültür Ağacı', 'Culture Tree', '文化树');
+add('← Geri', '← Back', '← 返回');
+add('⚙ Bilim ağacı', '⚙ Tech tree', '⚙ 科技树');
+add('◈ Kültür ağacı', '◈ Culture tree', '◈ 文化树');
+
+/* Person panel labels */
+add('enerji', 'energy', '精力');
+add('hoşnutluk', 'contentment', '满意度');
+add('korku', 'fear', '恐惧');
+add('ruh hâli:', 'mood:', '心情：');
+add('Henüz önemli bir anı yok.', 'No important memories yet.', '尚无重要记忆。');
+add('Aile ve çevre', 'Family & circle', '家庭与关系');
+add('Kişilik ve değerler', 'Personality & values', '性格与价值观');
+add('Anılar', 'Memories', '记忆');
+add('Yaşam çizgisi ve hikâye', 'Timeline & life story', '人生轨迹与故事');
+add('anılar:', 'memories:', '记忆：');
+add('Kurucu', 'Founder', '奠基者');
+add('Büyük Fatih', 'Great Conqueror', '伟大征服者');
+add('Fatih', 'Conqueror', '征服者');
+add('Büyük Hükümdar', 'Great Ruler', '伟大统治者');
+add('Uzun Hükümdar', 'Long-Reigning Ruler', '长期统治者');
+add('Hanedan Atası', 'Dynasty Patriarch', '王朝始祖');
+add('Soylu', 'Noble', '贵族');
+add('Bilge Yaşlı', 'Wise Elder', '睿智长者');
+add('Onurlu', 'Honorable', '荣耀者');
+add('Yükselen Krallık', 'Rising Kingdom', '崛起王国');
+add('Büyük Krallık', 'Great Kingdom', '伟大王国');
+add('Bölge Gücü', 'Regional Power', '区域强权');
+add('İmparatorluk', 'Empire', '帝国');
+add('Beylik', 'Chiefdom', '酋邦');
+
+add('meraklı', 'curious', '好奇');
+add('disiplinli', 'disciplined', '自律');
+add('girişken', 'outgoing', '外向');
+add('yumuşak huylu', 'gentle', '温和');
+add('kaygılı', 'anxious', '焦虑');
+add('gelenekçi', 'traditional', '传统');
+add('başıboş', 'unruly', '散漫');
+add('içedönük', 'introverted', '内向');
+add('sert', 'harsh', '严厉');
+add('soğukkanlı', 'level-headed', '沉着');
+add('yenilikçi', 'innovative', '创新');
+add('cemaatçi', 'communal', '集体主义');
+add('bireyci', 'individualist', '个人主义');
+add('onurlu', 'honorable', '重荣誉');
+add('çıkarcı', 'self-serving', '自私');
+add('kayıtsız', 'indifferent', '漠然');
+add('Açıklık', 'Openness', '开放性');
+add('Sorumluluk', 'Conscientiousness', '尽责性');
+add('Dışadönüklük', 'Extraversion', '外向性');
+add('Uyumluluk', 'Agreeableness', '宜人性');
+add('Kaygı', 'Neuroticism', '神经质');
+add('Gelenek', 'Tradition', '传统');
+add('Cemaat', 'Community', '社群');
+add('Onur', 'Honor', '荣誉');
+add('Merak', 'Curiosity', '好奇');
+
+add('sevdiği birini kaybetti', 'lost a loved one', '失去了所爱之人');
+add('birini öldürdü', 'killed someone', '杀死了一个人');
+add('evlendi', 'married', '结婚');
+add('çocuğu doğdu', 'had a child', '孩子出生');
+add('krallığı fethedildi', 'their kingdom was conquered', '王国被征服');
+add('açlıktan kırıldı', 'suffered from hunger', '饱受饥饿');
+add('intikamını aldı', 'took revenge', '完成复仇');
+add('intikam almak', 'take revenge', '复仇');
+add('eş bulmak', 'find a spouse', '寻找配偶');
+add('ailesinin yanında olmak', 'be with family', '陪伴家人');
+add('dostunu görmek', 'see a friend', '见朋友');
+add('intikam', 'revenge', '复仇');
+add('eş arıyor', 'seeking a spouse', '寻找配偶');
+
+add('yaşlılıktan öldü', 'died of old age', '死于年老');
+add('hastalıktan öldü', 'died of illness', '死于疾病');
+add('açlıktan öldü', 'starved to death', '饿死');
+add('tanrının gazabıyla öldü', 'died by divine wrath', '死于神罚');
+add('doğum sırasında öldü', 'died in childbirth', '死于难产');
+add('bilinmiyor', 'unknown', '未知');
+add('fetihte', 'in conquest', '在征服中');
+add('doğumda', 'in childbirth', '在分娩中');
+add('kurucu', 'founder', '奠基者');
+add('evlat', 'child', '子嗣');
+add('seçim', 'election', '选举');
+add('isyan önderi', 'rebel leader', '叛乱领袖');
+add('kardeş', 'sibling', '兄弟姐妹');
+add('darbe', 'coup', '政变');
+add('kuruluş öncesi', 'before the founding', '建国前');
+
+add('çocuk', 'child', '儿童');
+add('yetişkin', 'adult', '成年人');
+add('yaşlı', 'elder', '长者');
+add('kadın', 'woman', '女性');
+add('erkek', 'man', '男性');
+add('kız', 'girl', '女孩');
+add('oğlan', 'boy', '男孩');
+add('isyanda', 'in rebellion', '叛乱中');
+add('⚑ isyanda', '⚑ in rebellion', '⚑ 叛乱中');
+add('⚑ öfkeli, isyanda', '⚑ angry, in rebellion', '⚑ 愤怒，叛乱中');
+add('korku içinde', 'terrified', '惊恐');
+add('hoşnutsuz, küskün', 'discontented and resentful', '不满而怨恨');
+add('huzurlu, hoşnut', 'peaceful and content', '安宁满足');
+add('kararsız', 'undecided', '犹豫不决');
+
+/* Actions */
+add('tarlayı ekiyor', 'sowing the fields', '在田里播种');
+add('hasat yapıyor', 'harvesting', '收割');
+add('kaçıyor', 'fleeing', '逃跑');
+add('savaşıyor', 'fighting', '战斗');
+add('işgale yürüyor', 'marching to invade', '进军入侵');
+add('iyileştiriyor', 'healing', '治疗');
+add('tarlada yiyor', 'eating in the field', '在田里进食');
+add('şehirde yiyor', 'eating in the city', '在城里进食');
+add('yiyecek topluyor', 'gathering food', '采集食物');
+add('şehre taşıyor', 'carrying to the city', '运往城市');
+add('ticaret yolunda', 'on a trade route', '在商路上');
+add('casusluk yapıyor', 'spying', '刺探情报');
+add('devriye geziyor', 'patrolling', '巡逻');
+add('eve dönüyor', 'returning home', '回家');
+add('atölyede çalışıyor', 'working in the workshop', '在工坊工作');
+add('ayin yapıyor', 'performing rites', '举行仪式');
+add('geziniyor', 'wandering', '游荡');
+add('saray işleriyle ilgileniyor', 'attending to court affairs', '处理宫廷事务');
+add('intikam peşinde', 'seeking revenge', '寻求复仇');
+add('biriyle buluşmaya gidiyor', 'going to meet someone', '去见某人');
+add('yiyecek arıyor', 'searching for food', '寻找食物');
+add('ocak başında', 'by the hearth', '在炉边');
+add('hastalarını bekliyor', 'waiting for patients', '等待病人');
+add('pazarda', 'at the market', '在市场');
+add('gölgede bekliyor', 'waiting in the shadows', '在暗处等待');
+
+/* Readiness / status */
+add('günlük işi', 'daily work', '日常事务');
+add('günlük işiyle ilgileniyor', 'going about daily work', '忙于日常事务');
+add('tarafsız', 'neutral', '中立');
+add('gizli entrika', 'secret intrigue', '秘密阴谋');
+add('başkent', 'capital', '首都');
+add('Başkent', 'Capital', '首都');
+add('Şehir', 'City', '城市');
+add('krallık', 'kingdom', '王国');
+add('krallık nüfusu', 'kingdom population', '王国人口');
+add('hanedan', 'dynasty', '王朝');
+add('çağ', 'era', '时代');
+add('nüfus', 'population', '人口');
+
+/* Yearly table */
+add('savaş ilanı', 'declaration of war', '宣战');
+add('isyan / darbe / yıkılış', 'rebellion / coup / collapse', '叛乱 / 政变 / 灭亡');
+add('tahta çıkış', 'accession', '登基');
+add('kıtlık / salgın', 'famine / epidemic', '饥荒 / 瘟疫');
+add('+d doğum · −ö ölüm · ♥ evlilik · ⚔ savaş ilanı · ⚑ isyan/darbe/yıkılış · ♛ tahta çıkış · ☠ kıtlık/salgın',
+  '+d births · −d deaths · ♥ marriages · ⚔ declarations of war · ⚑ rebellion/coup/collapse · ♛ accessions · ☠ famine/epidemic',
+  '+d 出生 · −d 死亡 · ♥ 婚姻 · ⚔ 宣战 · ⚑ 叛乱/政变/灭亡 · ♛ 登基 · ☠ 饥荒/瘟疫');
+
+/* Map mode legend */
+add('▼ savaş', '▼ war', '▼ 战争');
+add('▼ siyaset', '▼ politics', '▼ 政治');
+add('▼ doğa', '▼ nature', '▼ 自然');
+add('kesikli çizgi = yıkılan krallık', 'dashed line = fallen kingdom', '虚线 = 已灭亡的王国');
+add('(işaretlerin üzerine gel)', '(hover over the markers)', '（将鼠标移到标记上）');
+add('▼ savaş · ▼ siyaset · ▼ doğa (işaretlerin üzerine gel) · kesikli çizgi = yıkılan krallık',
+  '▼ war · ▼ politics · ▼ nature (hover over the markers) · dashed line = fallen kingdom',
+  '▼ 战争 · ▼ 政治 · ▼ 自然（将鼠标移到标记上）· 虚线 = 已灭亡的王国');
+add('nehir', 'river', '河流');
+add('ova', 'plains', '平原');
+add('orman', 'forest', '森林');
+add('tepe', 'hills', '丘陵');
+add('dağ', 'mountains', '山地');
+add('Kış', 'Winter', '冬季');
+add('İlkbahar', 'Spring', '春季');
+
+/* Misc fragments */
+add('kişi · geçen yıl', 'people · last year', '人 · 去年');
+add('doğum,', 'births,', '出生，');
+add('ölüm ·', 'deaths ·', '死亡 ·');
+add('gerçek hız ≈', 'actual speed ≈', '实际速度 ≈');
+add('Bilgisayar istenen hızı yetiştiremiyor (çok kişi var)', 'The computer cannot keep up with the requested speed (too many people)', '电脑跟不上设定速度（人口过多）');
+add('yükseldi:', 'rose to:', '晋升为：');
+add('yıkıldı: danışmanlığın sona erdi (en yüksek rütben:', 'collapsed: your service ended (highest rank:', '灭亡：你的服务结束（最高等级：');
+add('Hükümdar seni çağırıyor:', 'The ruler summons you:', '统治者召见你：');
+add('Tarih yazılıyor…', 'Writing history…', '正在书写历史…');
+add('TARİH YAZILIYOR', 'WRITING HISTORY', '正在书写历史');
+add('Atla ▸', 'Skip ▸', '跳过 ▸');
+add('Vakayiname', 'Chronicle', '编年史');
+add('vaka kaydı yok', 'chronicle records', '编年史记录');
+add('Henüz vaka kaydı yok.', 'No chronicle records yet.', '尚无编年史记录。');
+
+add('düştü', 'fell', '灭亡');
+add('başkent)', 'capital)', '首都）');
+add('(başkent)', '(capital)', '（首都）');
+add('süren savaş', 'ongoing war', '战争进行中');
+add('sona erdi', 'ended', '已结束');
+add('henüz belli değil', 'not yet known', '尚未可知');
+add('Gerekçe', 'Cause', '起因');
+add('Sonuç', 'Outcome', '结果');
+add('saldıran', 'attacker', '进攻方');
+add('savunan', 'defender', '防守方');
+add('gerekçe', 'cause', '起因');
+add('sonuç', 'outcome', '结果');
+add('kişi öldürüldü', 'people killed', '人死亡');
+add('hükümdar', 'ruler', '统治者');
+add('şimdi', 'now', '至今');
+add('Y', 'Y', 'Y');
+add('yıkıldı', 'collapsed', '灭亡');
+add('yaşıyor', 'alive', '在世');
+add('kuruluş', 'founded', '建立');
+add('en yüksek nüfus', 'peak population', '最高人口');
+add('savaş kaydı', 'war record', '战争记录');
+add('kayıt yok', 'no records', '无记录');
+add('savaş kaydı yok', 'no war records', '无战争记录');
+add('henüz yok', 'none yet', '暂无');
+add('daha fazla', 'more', '更多');
+add('son', 'last', '最近');
+add('kişi', 'people', '人');
+add('şehir', 'cities', '城市');
+add('savaş', 'war', '战争');
+add('ittifak', 'alliance', '联盟');
+add('ticaret', 'trade', '贸易');
+add('gerginlik', 'tension', '紧张');
+add('dostluk', 'friendship', '友谊');
+add('takip', 'following', '跟随');
+add('savaşta', 'at war', '交战中');
+add('huzursuzluk', 'unrest', '动荡');
+
+/* Tech tree */
+add('edinildi', 'acquired', '已获得');
+add('araştırılabilir', 'researchable', '可研究');
+add('kilitli', 'locked', '锁定');
+add('özel etki', 'special effect', '特殊效果');
+add('Ön koşul:', 'Prerequisite:', '前置条件：');
+add('ön koşul gerekli', 'prerequisite required', '需要前置条件');
+add('🔒 ön koşul gerekli', '🔒 prerequisite required', '🔒 需要前置条件');
+
+/* ===================== Blocks with markup ===================== */
+addBlock('how',
+  'Haritadaki her figür <b>kendi kişiliği ve değerleri</b> olan bir birey: sever, evlenir, çocuk yetiştirir, yas tutar, intikam peşinde koşar. Bir figüre tıkla; kişiliğini, ailesini, dostlarını, hasımlarını, anılarını ve hedefini gör, isimlere tıklayarak aile ağında gez. <b>Takip</b> ile kamera onu izler, fare tekerleği yakınlaştırır. Hükümdarın kişiliği krallığın savaş, barış ve ihanet kararlarını belirler. <b>Seed</b> kutusu aynı tarihi yeniden oynatır. Kısayol: <b>Boşluk</b> duraklatır.',
+  'Every figure on the map is an individual with <b>their own personality and values</b>: they love, marry, raise children, mourn, and seek revenge. Click a figure to see their personality, family, friends, rivals, memories, and goal; click names to travel through the family network. <b>Follow</b> makes the camera track them, and the mouse wheel zooms. The ruler’s personality shapes the kingdom’s decisions on war, peace, and betrayal. The <b>Seed</b> box replays the same history. Shortcut: <b>Space</b> pauses.',
+  '地图上的每个身影都是有<b>自己性格与价值观</b>的个体：他们会爱、结婚、养育子女、哀悼、复仇。点击一个身影，查看其性格、家庭、朋友、仇敌、记忆与目标；点击名字可在家族关系网中穿行。<b>跟随</b>让镜头追踪他，鼠标滚轮缩放。统治者的性格决定王国在战争、和平与背叛上的抉择。<b>种子</b>框可重演同一段历史。快捷键：<b>空格</b>暂停。');
+addBlock('shortcuts',
+  '<b>Boşluk</b> duraklat · <b>+ / −</b> hız · <b>F</b> kamera takibi · <b>Esc</b> pencereyi kapat / seçimi bırak · <b>?</b> bu sayfa · <b>Shift+tık</b> haritaya yiyecek yağdır · fare tekerleği yakınlaştır',
+  '<b>Space</b> pause · <b>+ / −</b> speed · <b>F</b> camera follow · <b>Esc</b> close window / clear selection · <b>?</b> this page · <b>Shift+click</b> rain food on the map · mouse wheel zoom',
+  '<b>空格</b> 暂停 · <b>+ / −</b> 速度 · <b>F</b> 镜头跟随 · <b>Esc</b> 关闭窗口 / 取消选择 · <b>?</b> 本页面 · <b>Shift+点击</b> 在地图降下食物 · 鼠标滚轮缩放');
+
+/* ===================== Tour ===================== */
+addTour('Her figür ayrı bir hayat',
+  'Every figure is a life',
+  '每个身影都是一段人生',
+  'Haritada bir figüre tıkla: kişiliği, ailesi, anıları ve <b>şu an neden bunu yaptığı</b> sağ panelde görünür. Bir şehre tıklarsan ambarı ve tarlaları görürsün.',
+  'Click a figure on the map: their personality, family, memories, and <b>why they are doing this right now</b> appear in the right panel. Click a city to see its granary and fields.',
+  '点击地图上的一个身影：其性格、家庭、记忆以及<b>此刻为何这样做</b>会显示在右侧面板。点击城市可查看粮仓与田地。');
+addTour('Zamanı ve haritayı yönet',
+  'Control time and the map',
+  '掌控时间与地图',
+  'Üstteki düğmeler hızı ayarlar (<b>Boşluk</b> duraklatır). Fare tekerleği yakınlaştırır; haritanın üstündeki <b>Siyasi · Yiyecek · Huzur · İlişki</b> modları dünyayı farklı gösterir.',
+  'The top buttons set the speed (<b>Space</b> pauses). The mouse wheel zooms; the <b>Political · Food · Contentment · Relations</b> modes above the map show the world in different ways.',
+  '顶部按钮调节速度（<b>空格</b>暂停）。鼠标滚轮缩放；地图上方的<b>政治 · 食物 · 安定 · 关系</b>模式以不同方式呈现世界。');
+addTour('Danışman ol (hedef: büyüme)',
+  'Become an advisor (goal: growth)',
+  '成为顾问（目标：成长）',
+  '<b>Danışman</b> sekmesinden bir krallığa hizmet et: hükümdar birkaç yılda bir ikilem getirir (ticaret, kıtlık, savaş, şehir kurma...). Tavsiyen hükümdarın <b>güvenine</b> göre dinlenir; amaç krallığı Beylikten İmparatorluğa taşımak.',
+  'Serve a kingdom from the <b>Advisor</b> tab: every few years the ruler brings a dilemma (trade, famine, war, founding a city...). Your advice is followed according to the ruler’s <b>trust</b>; the goal is to raise the kingdom from a Chiefdom to an Empire.',
+  '在<b>顾问</b>标签页为一个王国效力：每隔几年统治者会带来一个难题（贸易、饥荒、战争、建城……）。你的建议会依据统治者的<b>信任</b>被采纳；目标是将王国从酋邦发展为帝国。');
+addTour('İlahi eller',
+  'Divine hands',
+  '神明之手',
+  '<b>Dünya</b> sekmesindeki <b>İlahi eller</b>: inanç puanı harcayarak yağmur, şifa, ilham, yıldırım, deprem ya da salgın gönder. Gücü seç, haritada hedefe tıkla. Puan yavaş dolar; akıllıca kullan.',
+  '<b>Divine hands</b> in the <b>World</b> tab: spend faith points to send rain, healing, inspiration, lightning, an earthquake, or an epidemic. Choose a power, then click a target on the map. Points recharge slowly; use them wisely.',
+  '<b>世界</b>标签页中的<b>神明之手</b>：消耗信仰点降下雨水、治愈、启迪、闪电、地震或瘟疫。选择神力，再点击地图目标。点数恢复缓慢，请善加使用。');
+addTour('Hikâyeyi takip et',
+  'Follow the story',
+  '追随故事',
+  'Bir kişinin kartında <b>☆ İzleme listesine ekle</b>: haritanın altındaki çubukta durur, başına olay gelince bildirim çıkar. <b>📜 Tarih Kitabı</b> ölenler dahil herkesin ve her krallığın geçmişini tutar.',
+  '<b>☆ Add to watch list</b> on a person’s card: they stay in the bar below the map and you are notified when something happens to them. The <b>📜 Book of History</b> keeps the past of everyone, including the dead, and of every kingdom.',
+  '在人物卡片上点 <b>☆ 加入关注列表</b>：他们会留在下方栏中，遇到事件时会通知你。<b>📜 历史之书</b>保存每个人（包括逝者）与每个王国的过往。');
+
+add('Language', 'Language', '语言');
+add('🎬 Yönetmen', '🎬 Director', '🎬 导演');
+add('🎬 Yönetmen ✓', '🎬 Director ✓', '🎬 导演 ✓');
+add('Yönetmen', 'Director', '导演');
+
+add('hırslı', 'ambitious', '野心勃勃');
+add('sadakate önem veren', 'loyal', '忠诚');
+add('kurnaz', 'cunning', '狡黠');
+add('açgözlü', 'greedy', '贪婪');
+add('hastalıktan', 'illness', '疾病');
+add('yaşlılıktan', 'old age', '年老');
+add('açlıktan', 'hunger', '饥饿');
+add('tanrının gazabıyla', 'divine wrath', '神罚');
+add('doğum sırasında', 'childbirth', '分娩时');
+add('takip et', 'follow', '跟随');
+add('Kuruluş neslinden.', 'From the founding generation.', '来自奠基一代。');
+add('Kuruluş neslinden', 'from the founding generation', '来自奠基一代');
+
+add('→ takip et', '→ follow', '→ 跟随');
+add('/ toplam', '/ total', '/ 总计');
+add('· yaşayan nüfus', '· living population', '· 现存人口');
+
+add('🔍 Haritada takip et', '🔍 Follow on map', '🔍 在地图上跟随');
+add('+1 şehir, toprak', '+1 city, land', '+1 座城市，领土');
+add('çağ:', 'era:', '时代：');
+add('nüfus:', 'population:', '人口：');
+add('en yüksek nüfus:', 'peak population:', '最高人口：');
+
+/* last-resort label: value (must stay after every specific rule) */
+i18nRule(/^(.+?): (.+)$/, m => {
+  if (m[1].trim().startsWith('·')) return null;
+  const a = m[1], b = T(m[2]);
+  if (b === m[2]) return null;
+  return a + ': ' + b;
+}, m => {
+  if (m[1].trim().startsWith('·')) return null;
+  const b = T(m[2]);
+  if (b === m[2]) return null;
+  return m[1] + '：' + b;
+});
+
+/* boot: run after the app has defined its DOM + first frame */
+try { i18nInit(); } catch (e) { console.error('[i18n] init failed', e); }
+
+})();
+</script>
+<!-- I18N-END -->
 </body>
 </html>
