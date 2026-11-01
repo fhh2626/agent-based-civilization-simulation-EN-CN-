@@ -271,6 +271,40 @@ async function main() {
     check(ascii.seedTitle === 'Seed: same seed = same history', 'seed title translated', ascii.seedTitle);
     check(ascii.playTitle === 'Pause / play (Space)', 'play title translated', ascii.playTitle);
 
+    const feedUi = await ev(`(() => {
+      const map = document.querySelector('.mapframe'), dock = document.querySelector('.dock');
+      const toasts = document.getElementById('toasts'), feed = document.getElementById('feed');
+      return {
+        inDock: !!(dock && dock.querySelector('#toasts')),
+        inMap: !!(map && map.querySelector('#toasts')),
+        toastsHidden: getComputedStyle(toasts).display === 'none',
+        feedShown: getComputedStyle(feed).display !== 'none',
+        labels: [...document.querySelectorAll('.feedtab')].map(b => b.textContent.trim())
+      };
+    })()`);
+    check(feedUi.inDock && !feedUi.inMap, 'alerts live in the bottom card, not over the map', JSON.stringify(feedUi));
+    check(feedUi.labels.join('|') === 'Recent events|Breaking alerts', 'feed tabs are translated', feedUi.labels.join('|'));
+    check(feedUi.toastsHidden && feedUi.feedShown, 'recent events is the default tab', JSON.stringify(feedUi));
+    await ev("showFeedTab('toasts')");
+    const alertsShown = await ev(`(() => ({
+      feed: getComputedStyle(document.getElementById('feed')).display,
+      alerts: getComputedStyle(document.getElementById('toasts')).display
+    }))()`);
+    check(alertsShown.alerts === 'flex' && alertsShown.feed === 'none', 'breaking alerts tab switches panes', JSON.stringify(alertsShown));
+    await ev("showFeedTab('feed')");
+    const keyboardTabs = await ev(`(() => {
+      const first = document.getElementById('feedTabEvents');
+      first.focus();
+      first.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      return {
+        active: document.activeElement && document.activeElement.id,
+        selected: document.getElementById('feedTabAlerts').getAttribute('aria-selected'),
+        toasts: getComputedStyle(document.getElementById('toasts')).display
+      };
+    })()`);
+    check(keyboardTabs.active === 'feedTabAlerts' && keyboardTabs.selected === 'true' && keyboardTabs.toasts === 'flex', 'vertical feed tabs support arrow keys', JSON.stringify(keyboardTabs));
+    await ev("showFeedTab('feed'); document.getElementById('feedTabEvents').focus()");
+
     const toastInfo = await ev(`(() => {
       const long = 'Long event '.repeat(120);
       const prevNoToast = settings.noToast;
@@ -282,7 +316,7 @@ async function main() {
         toast(long, 'pol');
         const el = document.querySelector('#toasts .toast:last-child');
         const tx = el && el.querySelector('.tx');
-        info = { len: long.length, title: tx && tx.title, text: tx && tx.textContent, clamp: tx && getComputedStyle(tx).webkitLineClamp };
+        info = { len: long.length, title: tx && tx.title, text: tx && tx.textContent, clamp: tx && getComputedStyle(tx).webkitLineClamp, fontSize: tx && getComputedStyle(tx).fontSize, fontWeight: tx && getComputedStyle(tx).fontWeight };
         if (el) el.remove();
       } finally {
         settings.noToast = prevNoToast;
@@ -292,6 +326,40 @@ async function main() {
     })()`);
     check(toastInfo.text === toastInfo.title && toastInfo.title.length === toastInfo.len, 'long toast keeps full text and title', JSON.stringify({ len: toastInfo.len, title: toastInfo.title && toastInfo.title.length, text: toastInfo.text && toastInfo.text.length }));
     check(toastInfo.clamp === '3', 'long toast is clamped to three lines', String(toastInfo.clamp));
+    check(toastInfo.fontSize === '14px' && toastInfo.fontWeight === '700', 'breaking alert text is bold and larger', `${toastInfo.fontSize}/${toastInfo.fontWeight}`);
+
+    const alertBehavior = await ev(`(() => {
+      const prevNoToast = settings.noToast;
+      const prevToastLast = toastLast;
+      try {
+        settings.noToast = false;
+        clearAlerts();
+        showFeedTab('toasts');
+        const box = document.getElementById('toasts');
+        const tab = document.querySelector('.feedtab[data-feed="toasts"]');
+        for (let i = 0; i < 6; i++) { toastLast = 0; toast('Long notification ' + i + ' '.repeat(80), 'pol'); }
+        box.scrollTop = 0;
+        toastLast = 0;
+        toast('Live probe', 'pol');
+        const afterScroll = box.scrollTop;
+        const unreadWhileActive = tab.classList.contains('new');
+        const live = document.getElementById('alertLive').textContent;
+        showFeedTab('toasts');
+        box.scrollTop = box.scrollHeight;
+        toastLast = 0;
+        toast('Tall notification ' + ' '.repeat(200), 'pol');
+        const followsBottom = box.scrollHeight - box.scrollTop - box.clientHeight;
+        return { afterScroll, unreadWhileActive, unreadAfter: tab.classList.contains('new'), atBottom: box.scrollTop, live, followsBottom };
+      } finally {
+        settings.noToast = prevNoToast;
+        toastLast = prevToastLast;
+        clearAlerts();
+        showFeedTab('feed');
+      }
+    })()`);
+    check(alertBehavior.afterScroll === 0 && alertBehavior.unreadWhileActive && !alertBehavior.unreadAfter && alertBehavior.atBottom > 0, 'active alert tab does not jump when reading older alerts', JSON.stringify(alertBehavior));
+    check(alertBehavior.followsBottom >= 0 && alertBehavior.followsBottom < 2, 'active alert tab follows new alerts when already at bottom', String(alertBehavior.followsBottom));
+    check(alertBehavior.live === 'Live probe', 'new alerts are announced through the live region', alertBehavior.live);
 
     await ev("openLegends('kisi')");
     await sleep(200);
@@ -339,6 +407,16 @@ async function main() {
       const overflow = await ev("document.documentElement.scrollWidth - window.innerWidth");
       check(overflow <= 1, 'no horizontal overflow at ' + width + 'px', String(overflow));
     }
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+    const baseFontScale = await ev('settings.fontScale');
+    for (const z of [1.15, 1.3, 1.35]) {
+      await ev(`settings.fontScale=${z};applySettings()`);
+      await sleep(220);
+      const fit = await ev(`(() => ({ z: settings.fontScale, innerW: innerWidth, innerH: innerHeight, overflowX: document.documentElement.scrollWidth - innerWidth, overflowY: document.documentElement.scrollHeight - innerHeight }))()`);
+      check(fit.overflowX <= 1 && fit.overflowY <= 1, 'no page overflow at font scale ' + z, JSON.stringify(fit));
+    }
+    await ev(`settings.fontScale=${baseFontScale};applySettings()`);
+    await sleep(180);
     await cdp.send('Emulation.clearDeviceMetricsOverride');
     await sleep(150);
 
