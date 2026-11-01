@@ -192,7 +192,7 @@ body.lang-zh button,body.lang-zh .lgsub,body.lang-zh .psub{letter-spacing:0}
 <body>
 <header class="top">
   <div class="brand"><div class="crest">♜</div><div><h1>Krallıklar</h1><small>her birey bir hayat</small></div></div>
-  <div class="time"><span class="chip" id="dateNow"></span></div>
+  <div class="time"><span class="chip" id="dateNow" data-i18n-skip></span></div>
   <div class="spacer"></div>
   <div class="grp spd" title="Hız"><button id="playBtn" class="primary" title="Duraklat / oynat (Boşluk)">❚❚</button><button id="stepBtn" title="Tek adım">⏭</button><button class="spdBtn" data-v="0.25">¼×</button><button class="spdBtn" data-v="0.5">½×</button><button class="spdBtn" data-v="1">1×</button><button class="spdBtn" data-v="2">2×</button><button class="spdBtn" data-v="4">4×</button><button class="spdBtn" data-v="8">8×</button></div><span class="chip" id="effSpd" style="display:none;font:italic 12px var(--serif);color:var(--muted);padding:3px 8px;border:1px solid var(--line);border-radius:6px"></span>
   <div class="grp"><button id="dirBtn" title="Yönetmen modu: kamera ilginç anlara gider (D)">🎬 Yönetmen</button></div>
@@ -373,12 +373,34 @@ function capability(a){const y=ageYears(a);
 
 let view={z:1,cx:450,cy:260,follow:false};
 let sim,playing=true,foodRate=3,aggMul=1.0,sciMul=1.0,stepsPerFrame=1,stepAcc=0,nextId=1,selectedId=null;
+let nextWarId=0;
+// UI zamanlayıcısı: simülasyon DOM'a dokunmaz; pahalı paneller görünürken ve
+// gerçek zamana göre tazelenir. Aynı seed'in tarihi değişmesin diye UI'da rng() yok.
+let activePage='bire';
+const UIDIRTY={stats:false,inspect:false,feed:false,stories:false,adv:false};
+let inStep=false;
+const UILAST={stats:0,inspect:0,feed:0,stories:0,history:0};
+const UI_EVERY={stats:120,inspect:100,feed:120,stories:100,history:500};
+const pendingToasts=[];
+let lastFrameTs=0,lastDateAt=0,lastDateText='';
+let pixelCacheW=0,pixelCacheDpr=0,pixelCacheS=1;
+let WT_SCRATCH=null,WT_HAS=null;
+const SIM_BUDGET=12;
+const DECIDE_C=[];
+const ENV_SCRATCH={enemy:null,wounded:null,food:null,owner:-1};
+// ?perf=1: yalnız geliştirici ölçümü; simülasyonu/RNG'yi etkilemez.
+const PERF=typeof location!=='undefined'&&new URLSearchParams(location.search).has('perf');
+let perfStep=0,perfRender=0,perfUI=0,perfOv=0,perfLastPaint=0;
+const perfFrames=[];
 
 // Uzamsal ızgara: sayısal indeks, `near` her çağrıda aynı diziyi yeniden kullanır (çağıran hemen tüketmeli)
 function makeGrid(cell){const cols=Math.ceil((W+100)/cell)+3,rows=Math.ceil((H+100)/cell)+3,B=new Array(cols*rows),out=[];
   return{add(it){const k=(((it.y/cell)|0)+1)*cols+((it.x/cell)|0)+1;(B[k]||(B[k]=[])).push(it);},
-    near(x,y){out.length=0;const cx=((x/cell)|0)+1,cy=((y/cell)|0)+1;
-      for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const b=B[(cy+j)*cols+cx+i];if(b)for(let n=0;n<b.length;n++)out.push(b[n]);}return out;}};}
+    near(x,y,r=1){out.length=0;const cx=((x/cell)|0)+1,cy=((y/cell)|0)+1;
+      for(let i=-r;i<=r;i++)for(let j=-r;j<=r;j++){const b=B[(cy+j)*cols+cx+i];if(b)for(let n=0;n<b.length;n++)out.push(b[n]);}return out;},
+    nearest(x,y,maxR){let best=null,bd=maxR*maxR;const cx=((x/cell)|0)+1,cy=((y/cell)|0)+1;
+      for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const b=B[(cy+j)*cols+cx+i];if(!b)continue;
+        for(let n=0;n<b.length;n++){const it=b[n];if(it.gone)continue;const dx=it.x-x,dy=it.y-y,d=dx*dx+dy*dy;if(d<bd){bd=d;best=it;}}}return best;}};}
 
 /* Topraklar */
 const TCELL=30,TCX=Math.ceil(W/TCELL),TCY=Math.ceil(H/TCELL),NCELL=TCX*TCY;
@@ -394,15 +416,16 @@ function stampCity(k,x,y,st,rc){const cx=(x/TCELL)|0,cy=(y/TCELL)|0;
     for(let q=1;q<=n;q++){const t=q/n,ax=clamp(cx+Math.round(i*t),0,TCX-1),ay=clamp(cy+Math.round(j*t),0,TCY-1);f*=BARRIER[ttype[ax*TCY+ay]];}
     inf[k][gx*TCY+gy]+=st*(1-d/rc)*f;}}
 function computeTerritory(){const K=sim.tribes.length;sim._terrTick=sim.tick;
-  for(let k=0;k<K;k++)inf[k].fill(0);
-  for(const t of sim.tribes)if(!t._dead)for(const c of t.cities)stampCity(t.id,c.x,c.y,5.5,5);
+  const live=sim.tribes.filter(t=>!t._dead);
+  for(const t of live)inf[t.id].fill(0);
+  for(const t of live)for(const c of t.cities)stampCity(t.id,c.x,c.y,5.5,5);
   for(const a of sim.agents)stamp(a.tribe,a.x,a.y,0.5,2);
-  for(let c=0;c<NCELL;c++){let best=-1,bv=0.6;for(let k=0;k<K;k++){const v=inf[k][c];if(v>bv){bv=v;best=k;}}owner[c]=best;}
+  for(let c=0;c<NCELL;c++){let best=-1,bv=0.6;for(let n=0;n<live.length;n++){const k=live[n].id,v=inf[k][c];if(v>bv){bv=v;best=k;}}owner[c]=best;}
   for(const t of sim.tribes){t.land=0;t.threat=0;t._sx=0;t._sy=0;}
   for(let c=0;c<NCELL;c++)if(owner[c]>=0){const T=sim.tribes[owner[c]];T.land++;T._sx+=((c/TCY)|0)*TCELL+TCELL/2;T._sy+=(c%TCY)*TCELL+TCELL/2;}
   for(const t of sim.tribes){if(t.land>0){t._lx=t._sx/t.land;t._ly=t._sy/t.land;}else{t._lx=null;t._ly=null;}}
   for(const a of sim.agents){const o=ownerAt(a.x,a.y);if(o>=0&&o!==a.tribe)sim.tribes[o].threat++;}
-  for(const t of sim.tribes){if(t._dead||!t.cities.length)continue;let sf=0,n=0;                     // toprağın verimi: şehir çevresi ortalaması → taşıma kapasitesi
+  for(const t of live){if(!t.cities.length)continue;let sf=0,n=0;                     // toprağın verimi: şehir çevresi ortalaması → taşıma kapasitesi
     for(const c of t.cities){const gx=(c.x/TCELL)|0,gy=(c.y/TCELL)|0;let cf=0;for(let dx=-4;dx<=4;dx++)for(let dy=-4;dy<=4;dy++){const cx=gx+dx,cy=gy+dy;if(cx<0||cy<0||cx>=TCX||cy>=TCY||hyp(dx,dy)>4)continue;sf+=fert[cx*TCY+cy];cf+=fert[cx*TCY+cy];n++;}c.fw=cf;}
     t.fertMul=n?clamp(sf/n/0.55,0.6,1.5):1;}
   // komşu krallıklar arasında paylaşılan sınır (gerilim kaynağı)
@@ -634,6 +657,7 @@ function foundFamilies(t,b,agents){
   for(let n=0;n<6;n++)agents.push(makeAgent(t,...at(),'CHILD',null,null,{age:rnd(15,34)}));                       // bekâr gençler
 }
 function reset(){
+  pendingToasts.length=0;UIDIRTY.adv=true;
   setSeed(SEED||newSeedStr()); nextId=1; sim=null;   // eski koşunun tick'i yeni doğumlara sızmasın
   usedCityNames=new Set();
   if(kingAuto)CFG.kingdoms=3+((rng()*4)|0);                                       // oto: her tohumda 3-6 krallık
@@ -648,8 +672,8 @@ function reset(){
   for(const t of tribes)foundFamilies(t,capital(t),agents);
   carveStart(tribes);
   const food=[];for(let i=0;i<400&&food.length<180;i++){const x=rng()*W,y=rng()*H;if(rng()<Math.pow(fert[cellOf(x,y)],1.5)+0.015)food.push({x,y});}
-  const K=CFG.kingdoms; nextKingId=K;
-  sim={tribes,agents,food,tick:0,feed:[],chronicle:[],legends:[],stories:[],yrStories:[],vit:{b:0,d:0,lb:0,ld:0,starve:0,epi:0,loot:0,grain:0},dm:{yr:{},cb:{}},climate:{mul:1,until:Math.round(rnd(...CFG.droughtGapYears)*CFG.yearLen)},
+  const K=CFG.kingdoms; nextKingId=K; nextWarId=0;
+  sim={tribes,agents,food,tick:0,feed:[],chronicle:[],legends:[],stories:[],yrStories:[],wars:[],warById:new Map(),vit:{b:0,d:0,lb:0,ld:0,starve:0,epi:0,loot:0,grain:0},dm:{yr:{},cb:{}},climate:{mul:1,until:Math.round(rnd(...CFG.droughtGapYears)*CFG.yearLen)},
     rel:Array.from({length:K},()=>new Array(K).fill(0)),tr:Array.from({length:K},()=>new Array(K).fill('none')),
     border:Array.from({length:K},()=>new Array(K).fill(0)),
     truce:Array.from({length:K},()=>new Array(K).fill(0))};
@@ -657,8 +681,8 @@ function reset(){
   for(const a of agents){updateRoleChoice(a,tribes[a.tribe]);recount();} // kurucu nesil: doygunlukla dengeli dağılır
   recount();sim.byId=new Map(agents.map(a=>[a.id,a]));
   for(const t of tribes){const c=agents.filter(a=>a.tribe===t.id&&lifeStage(a)==='adult');if(c.length)setRuler(t,pickRuler(c),'kurucu');}
-  watchIds=[];computeTerritory();selectedId=tribes[0].ruler!=null?tribes[0].ruler:null;view.z=1;view.follow=false;renderInspect();updateStats();renderStories();
-  logEvent(`${CFG.kingdoms} krallık kuruldu. Tarih başlıyor.`,'#aab');
+  watchIds=[];invalidateOverlay();computeTerritory();selectedId=tribes[0].ruler!=null?tribes[0].ruler:null;view.z=1;view.follow=false;renderInspect();updateStats();renderStories();
+  logEvent(`${CFG.kingdoms} krallık kuruldu. Tarih başlıyor.`,'#aab');flushUI(true);
 }
 function recount(){for(const t of sim.tribes){t.pop=0;t.counts={};t.low=0;}for(const a of sim.agents){const t=sim.tribes[a.tribe];t.pop++;if(a.energy<70)t.low++;t.counts[a.role]=(t.counts[a.role]||0)+1;}
   for(const t of sim.tribes){const ad=Math.max(1,t.pop-(t.counts.CHILD||0));t._tools=clamp((t.counts.ARTISAN||0)/(ad*0.10));t._faith=clamp((t.counts.PRIEST||0)/(ad*0.05));}}   // zanaatkâr→alet düzeyi, rahip→inanç düzeyi
@@ -697,12 +721,13 @@ function logEvent(text,color,meta){text=text.replace(/^[^\p{L}\p{N}]+/u,'');cons
   {const tr=[];if(sim&&sim.tribes)for(const t of sim.tribes)if(t.name&&text.includes(t.name))tr.push(t.id);pushLog({t:ev.tick,kind:evKind(text),text,color,tr,pp:(meta&&meta.pp)||[]});}
   sim.feed.unshift(ev);if(sim.feed.length>14)sim.feed.pop();
   (sim.chronicle=sim.chronicle||[]).unshift(ev);if(sim.chronicle.length>500)sim.chronicle.pop();
-  const el=document.getElementById('feed');if(!el)return;
+  UIDIRTY.feed=true;}
+function renderFeed(){const el=document.getElementById('feed');if(!el||!sim)return;
   el.innerHTML=sim.feed.map(e=>{const yr=Math.floor((e.tick||0)/CFG.yearLen),maj=evMajor(e.text);
     return `<div style="display:flex;gap:7px;align-items:baseline;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)">
       <span style="color:#5b6376;font-family:var(--mono);font-size:11.5px;min-width:34px">Y${yr}</span>
       <span style="font-size:12px">${evIcon(e.text)}</span>
-      <span style="color:${e.color||'#8c95ac'};font-size:11.5px;line-height:1.35;font-weight:${maj?600:400}">${e.text}</span></div>`;}).join('');}
+      <span style="color:${e.color||'#8c95ac'};font-size:11.5px;line-height:1.35;font-weight:${maj?600:400}">${e.text}</span></div>`;}).join('');UIDIRTY.feed=false;}
 const atWar=(x,y)=>{const A=sim.tribes[x],B=sim.tribes[y];return !!((A&&A.war&&A.war.target===y)||(B&&B.war&&B.war.target===x));};
 const living=t=>sim.tribes.filter(o=>o.id!==t.id&&o.pop>0&&!o._dead);
 function armyStrength(t){let s=t.treasury*0.02+1;for(const a of sim.agents)if(a.tribe===t.id&&a.role==='SOLDIER')s+=effPower(a)*a.bravery;return s;}
@@ -771,7 +796,8 @@ function doCulture(t){
 }
 function updateSociety(){
   for(const a of sim.agents)if(a.mem.length)recomputeMem(a);   // anılar söner
-  const kinBy={},vg=makeGrid(CFG.visionR);for(const a of sim.agents){(kinBy[a.tribe]=kinBy[a.tribe]||[]).push(a);vg.add(a);}
+  const kinBy={},vg=makeGrid(48),rebelsT=sim.tribes.map(()=>[]);
+  for(const a of sim.agents){(kinBy[a.tribe]=kinBy[a.tribe]||[]).push(a);vg.add(a);}
   for(const t of sim.tribes){if(t._dead)continue;
     const pop=Math.max(1,t.pop), cap=CFG.carryCap*(1+0.4*(t.cities.length-1));
     // Turchin sürücüleri (yumuşatılmış): sağlıklı krallık istikrarlı kalır, sadece gerçek stres çökertir
@@ -784,41 +810,41 @@ function updateSociety(){
     t.legit+=(target-t.legit)*0.05;                    // yavaş, yumuşak kayış
     doResearch(t); doCulture(t);                       // teknoloji + kültür
     // İsyan (Epstein): grievance = zorluk × meşruiyetsizlik. İç dünya (hoşnutluk/korku) EŞİĞİ belirler.
-    const kin=kinBy[t.id]||[], illeg=1-t.legit;
-    let rebels=0;
+    const kin=kinBy[t.id]||[], illeg=1-t.legit, rebels=rebelsT[t.id]||(rebelsT[t.id]=[]);
     for(const a of kin){
       if(lifeStage(a)==='child'){a.rebel=false;continue;}
       const hardship=clamp(0.40+a.hardship0*0.3-a.content*0.20+(1-a.energy/CFG.energyMax)*0.3);
       const grievance=hardship*illeg*(1-CFG.faithCalm*(t._faith||0));   // G = H(1-L); rahipler öfkeyi yatıştırır
       if(CFG.epstein){
         // Epstein 2002: P = 1-exp(-k·C/A), N = R·P, isyan ⇔ G-N > T. C: görüşteki asker ("cop"), A: kendisi dahil aktif isyancı
-        let C=0,A=1;for(const o of vg.near(a.x,a.y)){if(o===a||o.tribe!==a.tribe||dist(a,o)>CFG.visionR)continue;
+        // 48'lik hücre + 2 halka, 95 görüş yarıçapını tamamen kapsar; kare mesafe sadece adayları eler.
+        let C=0,A=1;for(const o of vg.near(a.x,a.y,2)){if(o===a||o.tribe!==a.tribe)continue;const dx=a.x-o.x,dy=a.y-o.y;if(dx*dx+dy*dy>CFG.visionR*CFG.visionR)continue;
           if(o.role==='SOLDIER')C++;else if(o.rebel)A++;}
         const P=1-Math.exp(-CFG.riskK*C/A), N=a.risk*P+a.fear*0.18;   // korku ek algılanan risk
         a.rebel = grievance-N > CFG.rebelThresh;
       } else a.rebel = grievance > (0.10 + a.risk*0.22 + a.fear*0.18);   // eski kural
-      if(a.rebel)rebels++;
+      if(a.rebel)rebels.push(a);
     }
     let nAd=0;for(const a of kin)if(lifeStage(a)!=='child')nAd++;
-    t.unrest=nAd?rebels/nAd:0;                            // yetişkinler üzerinden (çocuklar isyan etmez; eski eşikler yetişkin ağırlıklı nüfusla ayarlıydı)
-    trySecede(t);
+    t.unrest=nAd?rebels.length/nAd:0;                            // yetişkinler üzerinden (çocuklar isyan etmez; eski eşikler yetişkin ağırlıklı nüfusla ayarlıydı)
+    trySecede(t,rebels);
   }
 }
 function freshIdent(nc){const used=new Set(sim.tribes.filter(t=>!t._dead).map(t=>t.color));
   return {name:kingName(nc),color:pickKingdomColor(used,nextKingId)};}
-function trySecede(t){
+function trySecede(t,rebels){
   if(t._dead)return;
   const fragile=sim.tribes.filter(o=>!o._dead).length<=2?0.6:1;   // dünya birleşmişse bölünme eşiği düşer (Turchin: birleşmeyi bölünme izler)
   t._uStreak=t.unrest>=CFG.secedeFrac*fragile?t._uStreak+1:0;            // huzursuzluk birkaç yıl sürmeli (Goldstone/Turchin: kriz birikir)
   if(t.pop<CFG.secedeMinPop||t._uStreak<CFG.secedeSustain||sim.tick<t._seceCd)return;
   if(t.cities.length<2){                                         // tek şehirli devlet bölünemez: saray darbesi, yeni hanedan
     t.legit=Math.max(t.legit,0.62);t._uStreak=0;t._seceCd=sim.tick+CFG.secedeCool;t.born=sim.tick;   // yeni rejim, saat sıfırlanır
-    const reb=sim.agents.filter(a=>a.tribe===t.id&&a.rebel&&lifeStage(a)==='adult');
+    const reb=(rebels||sim.agents.filter(a=>a.tribe===t.id&&a.rebel)).filter(a=>lifeStage(a)==='adult');
     for(const a of sim.agents)if(a.tribe===t.id)a.rebel=false;
     logEvent(`⚑ ${ek(t.name,'loc')} saray darbesi`,t.color);
     if(reb.length){const old=sim.byId.get(t.ruler),nr=pickRuler(reb);if(old){bump(old,nr,-60);bump(nr,old,-60);}setRuler(t,nr,'darbe');}return;}
   if(sim.tribes.filter(o=>!o._dead).length>=CFG.maxKingdoms)return;
-  const rebels=sim.agents.filter(a=>a.tribe===t.id&&a.rebel);
+  rebels=rebels||sim.agents.filter(a=>a.tribe===t.id&&a.rebel);
   if(rebels.length<8)return;
   // en çok isyancının toplandığı şehri odak seç
   let bestCity=null,bestN=-1,bestIdx=-1;
@@ -864,7 +890,12 @@ function succeed(t,old,alive){
   if(old){const kids=old.children.map(id=>sim.byId.get(id)).filter(c=>c&&alive.has(c)&&c.tribe===t.id&&lifeStage(c)!=='child').sort((x,y)=>x.born-y.born);
     if(kids.length){heir=kids[0];how='evlat';}
     if(!heir){const sib=kin.filter(c=>c!==old&&sharesParent(c,old)).sort((x,y)=>x.born-y.born);if(sib.length){heir=sib[0];how='kardeş';}}}
-  if(!heir){let bv=-1;for(const c of kin){let pop=c.kills*0.15;for(const o of kin)if((o.rel.get(c.id)||0)>25)pop++;if(pop>bv){bv=pop;heir=c;}}how='seçim';}
+  if(!heir){
+    // Aday başına tüm kin listesini taramak yerine, kin→aday yönlü oy sayımını bir kez kur.
+    // relCap=14 olduğu için maliyet O(N×14); sonuç, sıra ve eşitlikler eski çift döngüyle aynı.
+    const kinIds=new Set(kin.map(c=>c.id)),incoming=new Map();
+    for(const o of kin)for(const [id,v] of o.rel)if(v>25&&kinIds.has(id))incoming.set(id,(incoming.get(id)||0)+1);
+    let bv=-1;for(const c of kin){const pop=c.kills*0.15+(incoming.get(c.id)||0);if(pop>bv){bv=pop;heir=c;}}how='seçim';}
   if(how==='kardeş'&&old)t.legit=Math.max(0.15,t.legit-0.04);                                     // kardeş: küçük sarsıntı
   else if(how==='seçim'&&old){t.legit=Math.max(0.15,t.legit-0.10);logEvent(`${ek(t.name,'loc')} veraset krizi`,'#ffb86b');}   // varis yok: kriz
   setRuler(t,heir,how);}
@@ -874,8 +905,11 @@ function warReason(t,o,betrayal){const border=sim.border[t.id][o.id]||0,rel=sim.
   if(betrayal)return 'ihanet';if(plot>20)return 'uzun süren entrika';if(border>=3&&rel<-10)return 'sınır gerginliği';if(rich>1.2&&t.greed>0.55)return 'zengin ambarlara göz dikmek';
   if(edge>1.3&&t.ambition>0.55)return 'hırslı hükümdar ve güçlü ordu';if(rel<-30)return 'eski husumet';if(t.unrest>0.1)return 'iç huzursuzluğunu dışarıya çevirmek';return 'toprak ve itibar arayışı';}
 const openWar=(x,y)=>(sim.wars||[]).find(w=>w.end==null&&((w.a===x&&w.b===y)||(w.a===y&&w.b===x)));
-function closeWar(x,y,out){const w=openWar(x,y);if(w){w.end=sim.tick;w.out=out;}}
-function declareWar(t,o,betrayal){const why=warReason(t,o,betrayal);(sim.wars=sim.wars||[]).push({id:sim.wars.length,a:t.id,b:o.id,start:sim.tick,end:null,out:null,reason:why,betrayal:!!betrayal,ruler:t.ruler,da:0,db:0});
+function pruneWars(){const W=sim.wars||[];if(W.length<=1000)return;const keep=[];let closed=0;
+  for(const w of W){if(w.end==null){keep.push(w);continue;}closed++;if(closed>800)keep.push(w);}   // en eski kapanmışları at, açık savaşları asla atma
+  if(keep.length!==W.length){sim.wars=keep;sim.warById=new Map(keep.map(w=>[w.id,w]));}}
+function closeWar(x,y,out){const w=openWar(x,y);if(w){w.end=sim.tick;w.out=out;pruneWars();}}
+function declareWar(t,o,betrayal){const why=warReason(t,o,betrayal);const w={id:nextWarId++,a:t.id,b:o.id,start:sim.tick,end:null,out:null,reason:why,betrayal:!!betrayal,ruler:t.ruler,da:0,db:0};(sim.wars=sim.wars||[]).push(w);(sim.warById=sim.warById||new Map()).set(w.id,w);pruneWars();
   const wasAlly=sim.tr[t.id][o.id]==='ally',wasTrade=sim.tr[t.id][o.id]==='trade';
   t.war={target:o.id,start:sim.tick,reason:why};o.war=o.war||{target:t.id,start:sim.tick,reason:'savunma'};
   if(sim.adv&&!sim.adv.ended&&(sim.adv.tid===t.id||sim.adv.tid===o.id))sim.adv.warNext=0;
@@ -990,7 +1024,7 @@ const kinPair=(a,b)=>a.parents.includes(b.id)||b.parents.includes(a.id)||sharesP
 function socialize(a,nb){
   if(a.spouse!=null&&!sim.byId.has(a.spouse)){a.spouse=null;}            // dul kaldı
   let o=null,n=0;
-  for(const c of nb){if(c===a||c.tribe!==a.tribe||dist(a,c)>CFG.socR)continue;n++;if(rng()*n<1)o=c;}   // yakındakilerden rastgele biri
+  for(const c of nb){if(c===a||c.tribe!==a.tribe)continue;const dx=a.x-c.x,dy=a.y-c.y;if(dx*dx+dy*dy>CFG.socR*CFG.socR)continue;n++;if(rng()*n<1)o=c;}   // yakındakilerden rastgele biri
   if(!o)return;
   bump(a,o,CFG.homoK*compat(a,o)+CFG.contact+2*(a.pers.A-0.5));            // temas (+1) + homofili + algılayanın uyumluluğu
   bump(o,a,CFG.homoK*compat(o,a)+CFG.contact+2*(o.pers.A-0.5));
@@ -1017,7 +1051,7 @@ function matchmaking(){
 
 /* ---------- Katman 1: birey kararı ---------- */
 function decide(a,t,env){
-  const hunger=clamp(1-a.energy/CFG.energyMax),eat=hunger*hunger,inTerr=env.owner===a.tribe,C=[]; // eat: azalan marjinal fayda
+  const hunger=clamp(1-a.energy/CFG.energyMax),eat=hunger*hunger,inTerr=env.owner===a.tribe,C=DECIDE_C;C.length=0; // eat: azalan marjinal fayda
   const enemy=env.enemy,dE=enemy?dist(a,enemy):1e9;
   const home=nearestCity(t.cities,a.x,a.y);
   if(enemy&&dE<70&&a.role!=='SOLDIER')C.push({act:'FLEE',s:clamp((70-dE)/70)*1.1,tx:a.x*2-enemy.x,ty:a.y*2-enemy.y});
@@ -1075,9 +1109,10 @@ function decide(a,t,env){
       else if(k==='HEAL')c.s*=kind;
       else if(k==='SEEK'&&a.goal)c.s*=soc;}
     if(hunger<0.5&&t.ruler!==a.id)C.push({act:'HEARTH',s:0.15+0.6*Math.pow(1-P.C,1.5),tx:home.x+((a.id%9)-4)*6,ty:home.y+(((a.id>>2)%9)-4)*6});}   // gevşek kişi ocak başında oyalanır
-  C.sort((x,y)=>y.s-x.s);const pool=C.filter(c=>c.s>=C[0].s-0.12);
+  C.sort((x,y)=>y.s-x.s);let cnt=0;const cut=C[0].s-0.12;for(const c of C)if(c.s>=cut)cnt++;
   if(a.id===selectedId){a._opts=C.slice(0,4).map(c=>[c.act,c.s]);a._optsT=sim.tick;}                // seçili kişi için karar puanlarını sakla (arayüz)
-  return pool[(rng()*pool.length)|0];
+  let pick=(rng()*cnt)|0;for(const c of C)if(c.s>=cut){if(pick===0)return c;pick--;}
+  return C[0];
 }
 function nearest(items,x,y,maxR){let best=null,bd=maxR*maxR;for(const it of items){if(it.gone)continue;const dx=it.x-x,dy=it.y-y,d=dx*dx+dy*dy;if(d<bd){bd=d;best=it;}}return best;}
 
@@ -1097,8 +1132,8 @@ const isRulerOf=a=>{const t=sim.tribes[a.tribe];return t&&t.ruler===a.id;};
 function story(kind,score,text,id,nolog){if(!sim.yrStories)sim.yrStories=[];sim.yrStories.push({t:sim.tick,kind,score,text,id,nolog});}
 function flushStories(){const Y=sim.yrStories||[];sim.yrStories=[];if(!Y.length)return;
   Y.sort((a,b)=>(b.score+rng()*0.9)-(a.score+rng()*0.9));const used=new Set();let n=0;   // yılın en ilginç 3 olayı, her türden en fazla bir tane
-  for(const e of Y){if(used.has(e.kind))continue;used.add(e.kind);sim.stories.unshift(e);if(!e.nolog){const tr=[];for(const t of sim.tribes)if(t.name&&e.text.includes(t.name))tr.push(t.id);pushLog({t:e.t,kind:/yağma/.test(e.kind)?'savaş':/kıtlık|salgın|hasat/.test(e.kind)?'doğa':'aile',text:e.text,color:null,tr,pp:e.id!=null?[e.id]:[]});}if(++n>=3)break;}if(sim.stories.length>40)sim.stories.length=40;renderStories();}
-function renderStories(){renderYearly();const el=document.getElementById('stories');if(!el||!sim.stories)return;
+  for(const e of Y){if(used.has(e.kind))continue;used.add(e.kind);sim.stories.unshift(e);if(!e.nolog){const tr=[];for(const t of sim.tribes)if(t.name&&e.text.includes(t.name))tr.push(t.id);pushLog({t:e.t,kind:/yağma/.test(e.kind)?'savaş':/kıtlık|salgın|hasat/.test(e.kind)?'doğa':'aile',text:e.text,color:null,tr,pp:e.id!=null?[e.id]:[]});}if(++n>=3)break;}if(sim.stories.length>40)sim.stories.length=40;UIDIRTY.stories=true;}
+function renderStories(){if(activePage!=='hik'){UIDIRTY.stories=false;return;}UIDIRTY.stories=false;renderYearly();const el=document.getElementById('stories');if(!el||!sim.stories)return;
   if(!sim.stories.length){el.innerHTML='<div class="empty">Her yıl en ilginç olaylar burada belirir.</div>';return;}
   el.innerHTML=sim.stories.slice(0,9).map(e=>`<div style="padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:11.5px;line-height:1.45"><span style="color:#5b6376;font-family:var(--mono);font-size:11.5px">Y${Math.floor(e.t/CFG.yearLen)}</span> ${e.text} ${e.id!=null&&sim.byId&&sim.byId.get(e.id)?`<a href="#" onclick="followId(${e.id});return false" style="color:#9ec5ff;white-space:nowrap">→ takip et</a>`:''}</div>`).join('');}
 function followId(id){selectedId=id;showTab('bire');view.follow=true;view.z=Math.max(view.z,2.4);followBtn.classList.add('primary');renderInspect();render();}
@@ -1167,6 +1202,8 @@ function fieldsTick(fieldSp,se){
       c.crop=(c.crop||0)+fieldSp*boost*foodSeason[se]*(c.fw||1)/W*c._sownFrac*(1+CFG.toolFarm*(t._tools||0))*modv(t,'crop');}}}
 /* ---------- Bir adım ---------- */
 function step(){
+  inStep=true;
+  try{
   const {agents,food,tribes}=sim;sim.tick++;
   if(CFG.climate&&sim.tick>=sim.climate.until){
     if(sim.climate.mul<1){sim.climate={mul:1,until:sim.tick+Math.round(rnd(...CFG.droughtGapYears)*CFG.yearLen)};logEvent('Kuraklık sona erdi, yağmurlar döndü','#9fb');}
@@ -1180,10 +1217,13 @@ function step(){
       if((tr==='trade'||tr==='ally')&&sim.rel[t.id][o.id]>bR){bR=sim.rel[t.id][o.id];t._tradePartner=o.id;}
       const p=t.plots[o.id]||0;if(p>bP){bP=p;t._plotTarget=o.id;}}}
 
-  sim.byId=new Map();for(const a of agents)sim.byId.set(a.id,a);
+  sim.byId.clear();for(const a of agents)sim.byId.set(a.id,a);
   const ag=makeGrid(48);for(const a of agents)ag.add(a);
   const fg=makeGrid(60);for(const f of food)fg.add(f);
-  const births=[];const WT=tribes.map(A=>tribes.map(B=>(A.war&&A.war.target===B.id)||(B.war&&B.war.target===A.id)));const hasWar=WT.map(r=>r.some(Boolean));   // savaş tablosu (adım başına bir kez)
+  const births=[];
+  if(!WT_SCRATCH||WT_SCRATCH.length<tribes.length){WT_SCRATCH=Array.from({length:tribes.length},()=>new Array(tribes.length));WT_HAS=new Array(tribes.length);}
+  const WT=WT_SCRATCH,hasWar=WT_HAS;
+  for(let i=0;i<tribes.length;i++){for(let j=0;j<tribes.length;j++)WT[i][j]=(tribes[i].war&&tribes[i].war.target===tribes[j].id)||(tribes[j].war&&tribes[j].war.target===tribes[i].id);hasWar[i]=WT[i].some(Boolean);}   // savaş tablosu (adım başına bir kez, yeniden kullanılır)
 
   for(const a of agents){
     const t=tribes[a.tribe];a.age++;a.energy-=CFG.drain*(0.7+0.4*a.speed);
@@ -1195,7 +1235,7 @@ function step(){
     if(needLoop)for(const o of nb){if(o.tribe!==a.tribe){if(!WT[a.tribe][o.tribe]||lifeStage(o)==='child')continue;   // düşman: yalnızca savaştaki devletin bireyi; çocuklar hedef değil
         let d=(o.x-a.x)**2+(o.y-a.y)**2;if(o.role!=='SOLDIER')d*=6.25;if(d<ebd){ebd=d;enemy=o;}}
       else if(a.role==='DOCTOR'&&o!==a&&o.energy<70){const d=(o.x-a.x)**2+(o.y-a.y)**2;if(d<wbd){wbd=d;wounded=o;}}}
-    const env={enemy,wounded,food:a.carrying?null:nearest(fg.near(a.x,a.y),a.x,a.y,a.sense),owner:ownerAt(a.x,a.y)};
+    const env=ENV_SCRATCH;env.enemy=enemy;env.wounded=wounded;env.food=a.carrying?null:fg.nearest(a.x,a.y,a.sense);env.owner=ownerAt(a.x,a.y);
     // İÇ DÜNYA: tok+güvende+meşru krallık → hoşnutluk artar; aç/tehdit → düşer, korku yükselir
     const fed=a.energy>CFG.energyMax*0.45, threat=enemy&&ebd<3025;
     a.content=clamp(a.content+(fed?0.003:-0.006)+(t.legit-0.55)*0.004+(threat?-0.006:0.0012));
@@ -1233,7 +1273,7 @@ function step(){
   }
 
   // Doğumlar: evli kadınlar gebe kalır, doğurur (doğum aralığı, yaş, beslenme, kalabalık)
-  conceiveAndBirth(agents,births,a=>tribes[a.tribe]);sim.vit.b+=births.length;for(const b of births){const y=Math.floor(sim.tick/CFG.yearLen),Y=dmYear(y);Y.b++;(sim.dm.cb[y]=sim.dm.cb[y]||{b:0,d15:0}).b++;}
+  conceiveAndBirth(agents,births,a=>tribes[a.tribe]);if(births.length)sim._peopleDirty=true;sim.vit.b+=births.length;for(const b of births){const y=Math.floor(sim.tick/CFG.yearLen),Y=dmYear(y);Y.b++;(sim.dm.cb[y]=sim.dm.cb[y]||{b:0,d15:0}).b++;}
   if(sim.tick%CFG.yearLen===0){for(const t of tribes){if(t._dead)continue;const at=ek(t.name,'loc'),note=(kind,sc,tx)=>{story(kind,sc,tx,null,true);pushLog({t:sim.tick,kind:'doğa',text:tx,color:null,tr:[t.id],pp:[]});};
     if((t._starveY||0)>=4)note('kıtlık',6,`Kıtlık: ${at} bu yıl ${t._starveY} kişi açlıktan öldü`);
     if((t._epiY||0)>=4)note('salgın',6,`Salgın: ${at} bu yıl ${t._epiY} kişiyi götürdü`);
@@ -1243,7 +1283,12 @@ function step(){
     t._starveLast=t._starveY||0;t._starveY=0;t._epiY=0;t._harvY=0;}
   vignettes();
   for(const w of (sim.wars||[]))if(w.end==null){const A=tribes[w.a],B=tribes[w.b];if(!((A.war&&A.war.target===w.b)||(B.war&&B.war.target===w.a))){w.end=sim.tick;w.out=(A._dead||B._dead)?'bir taraf yıkıldı':'sona erdi';}}
-  sim.vit.starve=0;sim.vit.epi=0;dmExposure();{const yy=Math.floor(sim.tick/CFG.yearLen);for(const t of tribes){if(t._dead&&t._fell==null)t._fell=sim.tick;if(!t._dead||t._fell===sim.tick){t.popHist.push([yy,t._dead?0:t.pop]);if(t.popHist.length>420)t.popHist.shift();}}}{const y0=Math.floor(sim.tick/CFG.yearLen)-1,inY=e=>Math.floor((e.t||0)/CFG.yearLen)===y0,L=(sim.log||[]).filter(inY),ct=re=>L.filter(e=>re.test(e.text)).length;
+  pruneWars();
+  sim.vit.starve=0;sim.vit.epi=0;dmExposure();{const yy=Math.floor(sim.tick/CFG.yearLen);for(const t of tribes){if(t._dead&&t._fell==null)t._fell=sim.tick;if(!t._dead||t._fell===sim.tick){t.popHist.push([yy,t._dead?0:t.pop]);if(t.popHist.length>420)t.popHist.shift();}}
+    for(const t of tribes){if(t.popHist.length>120){const H=t.popHist,step=Math.ceil(H.length/119),out=[];
+      for(let i=0;i<H.length;i+=step){let best=H[i];for(let j=i+1;j<Math.min(H.length,i+step);j++)if(H[j][1]>best[1])best=H[j];out.push(best);}
+      if(out[out.length-1]!==H[H.length-1])out.push(H[H.length-1]);t.popHist=out;}if(t.rulers.length>64)t.rulers.splice(0,t.rulers.length-64);if(t._dead)t.plots={};}
+    const minY=yy-200;for(const k in sim.dm.yr)if(+k<minY)delete sim.dm.yr[k];for(const k in sim.dm.cb)if(+k<minY)delete sim.dm.cb[k];}{const y0=Math.floor(sim.tick/CFG.yearLen)-1,inY=e=>Math.floor((e.t||0)/CFG.yearLen)===y0,L=(sim.log||[]).filter(inY),ct=re=>L.filter(e=>re.test(e.text)).length;
     (sim.yearly=sim.yearly||[]).unshift({y:y0,pop:sim.agents.length,k:tribes.filter(t=>!t._dead).length,b:sim.vit.b,d:sim.vit.d,m:sim.vit.m||0,war:ct(/savaş açtı|İHANET/),rev:ct(/İSYAN|darbe|dağıldı/),thr:ct(/tahtına çıktı/),fam:ct(/Kıtlık/),epi:ct(/Salgın|salgın başladı/)});if(sim.yearly.length>80)sim.yearly.pop();sim.vit.m=0;}
   if(sim.adv&&typeof advYear==='function')advYear();if(typeof godYear==='function')godYear();updateEpidemics();sim.vit.lb=sim.vit.b;sim.vit.ld=sim.vit.d;sim.vit.b=0;sim.vit.d=0;flushStories();}
   if(sim.tick%Math.round(CFG.yearLen/2)===0)matchmaking();
@@ -1331,8 +1376,9 @@ function step(){
   {let j=0;for(let i=0;i<food.length;i++){const f=food[i];if(!f.gone)food[j++]=f;}food.length=j;}   // yenenleri tek geçişte ayıkla
   if(food.length>CFG.foodCap)food.splice(0,food.length-CFG.foodCap);
   if(sim.tick%14===0)computeTerritory();
-  if(sim.tick%12===0)updateStats();
-  if(selectedId!=null&&sim.tick%6===0)renderInspect();
+  if(sim.tick%12===0)UIDIRTY.stats=true;
+  if(selectedId!=null)UIDIRTY.inspect=true;
+  }finally{inStep=false;}
 }
 
 /* ---------- Çizim ---------- */
@@ -1387,40 +1433,89 @@ function settlement(col,capital){const key='S|'+col+'|'+(capital?1:0);let s=SPR.
   else{houseDraw(g,13,19,8,6,col,roof);g.strokeStyle='#5a4028';g.lineWidth=0.7;g.beginPath();g.moveTo(26,17);g.lineTo(26,10);g.stroke();g.fillStyle=col;g.fillRect(26,10,4,2.6);}
   s={c};SPR.set(key,s);return s;}
 /* Sınır katmanı: etki alanı alanlarından yumuşak kontur (hücre karesi değil); dağ/nehir bariyerlerini izler */
-let ovCv=null,ovTick=-1,ovMode='',mapMode='pol';const OVR=3;
+let ovCv=null,ovCtx=null,ovImg=null,ovTick=-1,ovMode='',mapMode='pol';const OVR=3;
+let ovLastBuild=0,ovWorker=null,ovWorkerBroken=false,ovWorkerBusy=false,ovPending=null,ovReq=0,ovEpoch=0,ovInFlight=null,ovPerfStart=0;
 function hexRGB(h){const n=parseInt(h.slice(1,7),16);return [(n>>16)&255,(n>>8)&255,n&255];}
 const lerpC=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
-function buildOverlay(){const OW=Math.ceil(W/OVR),OH=Math.ceil(H/OVR);
-  if(!ovCv||ovCv.width!==OW){ovCv=document.createElement('canvas');ovCv.width=OW;ovCv.height=OH;}
-  const g=ovCv.getContext('2d');if(!g||!g.createImageData)return;const img=g.createImageData(OW,OH);if(!img||!img.data||img.data.length!==OW*OH*4)return;
-  const d=img.data;ovMode=mapMode;
-  if(mapMode==='yiyecek'){                                                                                  // toprak verimi ısı haritası
+/* Saf overlay hesabı: ana thread'de fallback, Blob Worker'da aynı fonksiyon.
+   Dış değişken okumaz; böylece Worker'a toString() ile taşınabilir. */
+function overlayCompute(P){
+  const OW=P.OW,OH=P.OH,OVR=P.OVR,TCELL=P.TCELL,TCX=P.TCX,TCY=P.TCY,mode=P.mapMode;
+  const d=new Uint8ClampedArray(OW*OH*4),own=new Int16Array(OW*OH);own.fill(-1);
+  const cl=(v,a=0,b=1)=>v<a?a:v>b?b:v;
+  const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+  if(mode==='yiyecek'){
+    const F=P.fert||[];
     for(let j=0;j<OH;j++){const v=(j*OVR+OVR/2)/TCELL-0.5,j0=Math.floor(v),fv=v-j0;
       for(let i=0;i<OW;i++){const u=(i*OVR+OVR/2)/TCELL-0.5,i0=Math.floor(u),fu=u-i0;let f=0;
-        for(let a=0;a<2;a++)for(let b=0;b<2;b++){const gx=clamp(i0+a,0,TCX-1),gy=clamp(j0+b,0,TCY-1);f+=fert[gx*TCY+gy]*(a?fu:1-fu)*(b?fv:1-fv);}
-        const c=lerpC([150,70,40],[170,225,70],clamp(f)),p=(j*OW+i)*4;d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=60+110*clamp(f);}}
-    g.putImageData(img,0,0);ovTick=sim._terrTick;return;}
-  const K=sim.tribes.length,own=new Int16Array(OW*OH).fill(-1);
+        for(let a=0;a<2;a++)for(let b=0;b<2;b++){const gx=cl(i0+a,0,TCX-1),gy=cl(j0+b,0,TCY-1);f+=F[gx*TCY+gy]*(a?fu:1-fu)*(b?fv:1-fv);}
+        const c=mix([150,70,40],[170,225,70],cl(f)),p=(j*OW+i)*4;d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=60+110*cl(f);}}
+    return d;
+  }
+  const live=P.live||[];
   for(let j=0;j<OH;j++){const v=(j*OVR+OVR/2)/TCELL-0.5,j0=Math.floor(v),fv=v-j0;
-    for(let i=0;i<OW;i++){const u=(i*OVR+OVR/2)/TCELL-0.5,i0=Math.floor(u),fu=u-i0;
-      let best=-1,bv=0.6;
-      for(let k=0;k<K;k++){const A=inf[k];if(!A)continue;let val=0;
-        for(let a=0;a<2;a++)for(let b=0;b<2;b++){const gx=clamp(i0+a,0,TCX-1),gy=clamp(j0+b,0,TCY-1);val+=A[gx*TCY+gy]*(a?fu:1-fu)*(b?fv:1-fv);}
-        if(val>bv){bv=val;best=k;}}
+    for(let i=0;i<OW;i++){const u=(i*OVR+OVR/2)/TCELL-0.5,i0=Math.floor(u),fu=u-i0;let best=-1,bv=0.6;
+      for(let li=0;li<live.length;li++){const A=live[li].inf;if(!A)continue;let val=0;
+        for(let a=0;a<2;a++)for(let b=0;b<2;b++){const gx=cl(i0+a,0,TCX-1),gy=cl(j0+b,0,TCY-1);val+=A[gx*TCY+gy]*(a?fu:1-fu)*(b?fv:1-fv);}
+        if(val>bv){bv=val;best=li;}}
       own[j*OW+i]=best;}}
-  const cols=sim.tribes.map(t=>mapMode==='huzur'?lerpC([100,185,100],[225,60,48],clamp((t.unrest||0)/0.2)):hexRGB(t.color));
-  const fillA=mapMode==='huzur'?100:mapMode==='iliski'?30:52;   // dolgu biraz daha az şeffaf
+  const fillA=mode==='huzur'?100:mode==='iliski'?30:52;   // dolgu biraz daha az şeffaf
   for(let j=0;j<OH;j++)for(let i=0;i<OW;i++){const o=own[j*OW+i],p=(j*OW+i)*4;if(o<0)continue;
-    const edge=(i>0&&own[j*OW+i-1]!==o)||(i<OW-1&&own[j*OW+i+1]!==o)||(j>0&&own[(j-1)*OW+i]!==o)||(j<OH-1&&own[(j+1)*OW+i]!==o),c=cols[o];
+    const edge=(i>0&&own[j*OW+i-1]!==o)||(i<OW-1&&own[j*OW+i+1]!==o)||(j>0&&own[(j-1)*OW+i]!==o)||(j<OH-1&&own[(j+1)*OW+i]!==o),c=live[o].color;
     if(edge){d[p]=(c[0]*0.38)|0;d[p+1]=(c[1]*0.38)|0;d[p+2]=(c[2]*0.38)|0;d[p+3]=235;}
     else{d[p]=c[0];d[p+1]=c[1];d[p+2]=c[2];d[p+3]=fillA;}}
-  g.putImageData(img,0,0);ovTick=sim._terrTick;}
-function pixelScale(){const cw=typeof cv.clientWidth==='number'?cv.clientWidth:0;if(!(cw>0))return 1;return Math.min(2,Math.max(1,Math.round(cw*(window.devicePixelRatio||1)/W)));}   // geniş/yüksek yoğunluklu ekranda bulanıklığı önle
+  return d;
+}
+function overlayPayload(){
+  const OW=Math.ceil(W/OVR),OH=Math.ceil(H/OVR),live=[];
+  if(mapMode!=='yiyecek')for(const t of sim.tribes){if(t._dead)continue;
+    live.push({id:t.id,inf:inf[t.id],color:mapMode==='huzur'?lerpC([100,185,100],[225,60,48],clamp((t.unrest||0)/0.2)):hexRGB(t.color)});}
+  const P={OW,OH,OVR,TCELL,TCX,TCY,mapMode,live,terrTick:sim._terrTick};
+  if(mapMode==='yiyecek')P.fert=fert;
+  return P;
+}
+function applyOverlayData(data,P){if(!ovCv||!ovCtx)return;
+  if(!ovImg||ovImg.width!==P.OW||ovImg.height!==P.OH)ovImg=ovCtx.createImageData(P.OW,P.OH);
+  ovImg.data.set(data);ovCtx.putImageData(ovImg,0,0);ovTick=P.terrTick;ovMode=P.mapMode;}
+function dispatchOverlay(){if(!ovWorker||ovWorkerBroken||ovWorkerBusy||!ovPending)return;
+  const P=ovPending;ovPending=null;ovWorkerBusy=true;ovInFlight=P;ovReq++;ovPerfStart=performance.now();
+  try{ovWorker.postMessage({id:ovReq,epoch:ovEpoch,p:P});}catch(e){ovWorkerBusy=false;ovInFlight=null;ovWorkerBroken=true;const o0=performance.now();applyOverlayData(overlayCompute(P),P);perfOv=performance.now()-o0;}
+}
+function initOverlayWorker(){if(ovWorker||ovWorkerBroken)return;
+  if(typeof Worker!=='function'||typeof Blob!=='function'||!window.URL||!URL.createObjectURL)return;
+  try{
+    const src='const compute='+overlayCompute.toString()+';self.onmessage=function(e){try{const p=e.data&&e.data.p;if(!p)return;const d=compute(p);self.postMessage({id:e.data.id,epoch:e.data.epoch,data:d.buffer},[d.buffer]);}catch(err){self.postMessage({id:e.data&&e.data.id,epoch:e.data&&e.data.epoch,error:String(err&&err.message||err)});}};';
+    const url=URL.createObjectURL(new Blob([src],{type:'text/javascript'}));ovWorker=new Worker(url);try{URL.revokeObjectURL(url);}catch(_){ }
+    ovWorker.onmessage=function(e){const m=e.data||{};ovWorkerBusy=false;
+      if(m.epoch!==ovEpoch){ovInFlight=null;if(ovPending)dispatchOverlay();return;}
+      const P=ovInFlight;ovInFlight=null;
+      if(m.error){ovWorkerBroken=true;try{ovWorker.terminate();}catch(_){ }ovWorker=null;if(P&&P.terrTick===sim._terrTick&&P.mapMode===mapMode){const o0=performance.now();applyOverlayData(overlayCompute(P),P);perfOv=performance.now()-o0;}if(ovPending)dispatchOverlay();return;}
+      if(P&&m.id===ovReq&&P.terrTick===sim._terrTick&&P.mapMode===mapMode){const o0=performance.now();applyOverlayData(new Uint8ClampedArray(m.data),P);perfOv=o0-ovPerfStart;}
+      if(ovPending)dispatchOverlay();};
+    ovWorker.onerror=function(){ovWorkerBroken=true;ovWorkerBusy=false;try{ovWorker.terminate();}catch(_){ }ovWorker=null;
+      const P=ovInFlight||ovPending;ovInFlight=null;ovPending=null;
+      if(P&&P.terrTick===sim._terrTick&&P.mapMode===mapMode){const o0=performance.now();applyOverlayData(overlayCompute(P),P);perfOv=performance.now()-o0;} };
+  }catch(e){ovWorkerBroken=true;ovWorker=null;}
+}
+function buildOverlay(force=false){if(!sim||mapMode==='arazi')return;
+  const OW=Math.ceil(W/OVR),OH=Math.ceil(H/OVR),first=!ovCv;
+  if(first||!ovCv||ovCv.width!==OW||ovCv.height!==OH){ovCv=document.createElement('canvas');ovCv.width=OW;ovCv.height=OH;ovCtx=ovCv.getContext('2d');ovImg=null;}
+  if(!ovCtx)return;
+  const now=performance.now(),tick=sim._terrTick;
+  if(!force&&ovTick===tick&&ovMode===mapMode)return;
+  if(!force&&!first&&now-ovLastBuild<80)return;
+  const P=overlayPayload();ovLastBuild=now;
+  initOverlayWorker();
+  if(ovWorker&&!ovWorkerBroken&&!first&&!force){ovPending=P;dispatchOverlay();return;}
+  {const o0=performance.now();applyOverlayData(overlayCompute(P),P);perfOv=performance.now()-o0;}
+}
+function invalidateOverlay(){ovEpoch++;ovPending=null;ovInFlight=null;ovPerfStart=0;ovTick=-1;ovMode='';ovLastBuild=0;if(ovCtx)ovCtx.clearRect(0,0,ovCv.width,ovCv.height);}
+function pixelScale(){const cw=typeof cv.clientWidth==='number'?cv.clientWidth:0;if(!(cw>0))return 1;const dpr=window.devicePixelRatio||1;if(cw===pixelCacheW&&dpr===pixelCacheDpr)return pixelCacheS;pixelCacheW=cw;pixelCacheDpr=dpr;pixelCacheS=Math.min(2,Math.max(1,Math.round(cw*dpr/W)));return pixelCacheS;}   // geniş/yüksek yoğunluklu ekranda bulanıklığı önle
 function L10N(s){return window.I18N?window.I18N.t(s):s;}
 function render(){
   animT++;if(typeof directorFrame==='function')directorFrame();
   {const S=pixelScale();if(cv.width!==W*S){cv.width=W*S;cv.height=H*S;}ctx.setTransform(S,0,0,S,0,0);ctx.imageSmoothingEnabled=true;}
-  const dn=document.getElementById('dateNow');if(dn)dn.textContent=dateStr(sim.tick)+(sim.climate&&sim.climate.mul<1?'  ·  ☀ KURAKLIK':'');
+  const dn=document.getElementById('dateNow');if(dn){const now=performance.now();if(now-lastDateAt>=100){lastDateAt=now;const raw=dateStr(sim.tick)+(sim.climate&&sim.climate.mul<1?' · ☀ KURAKLIK':'');const lang=window.I18N?I18N.lang:'tr',key=lang+'\u0000'+raw;if(key!==lastDateText){lastDateText=key;dn.textContent=lang==='tr'?raw:I18N.translate(raw);}}}
   ctx.clearRect(0,0,W,H);
   const sel0=selectedId!=null&&sim.byId?sim.byId.get(selectedId):null;
   if(view.follow&&sel0){view.cx+=(sel0.x-view.cx)*0.12;view.cy+=(sel0.y-view.cy)*0.12;}
@@ -1428,9 +1523,10 @@ function render(){
   if(view.z<=1.001){view.z=1;view.cx=W/2;view.cy=H/2;}
   {const hw=W/(2*view.z),hh=H/(2*view.z);view.cx=clamp(view.cx,hw,W-hw);view.cy=clamp(view.cy,hh,H-hh);}
   ctx.save();ctx.translate(W/2,H/2);ctx.scale(view.z,view.z);ctx.translate(-view.cx,-view.cy);
+  const cull=view.z>1.3,vx0=view.cx-W/(2*view.z)-24,vx1=view.cx+W/(2*view.z)+24,vy0=view.cy-H/(2*view.z)-24,vy1=view.cy+H/(2*view.z)+24;
   if(terrCv)ctx.drawImage(terrCv,0,0,W,H);
-  if(ovTick!==sim._terrTick||ovMode!==mapMode)buildOverlay();if(ovCv&&mapMode!=='arazi'){ctx.imageSmoothingEnabled=true;ctx.drawImage(ovCv,0,0,W,H);}
-  ctx.fillStyle='#3c7a5b';for(const f of sim.food)ctx.fillRect(f.x-1.2,f.y-1.2,2.4,2.4);
+  if(ovTick!==sim._terrTick||ovMode!==mapMode)buildOverlay(ovMode!==mapMode);if(ovCv&&mapMode!=='arazi'){ctx.imageSmoothingEnabled=true;ctx.drawImage(ovCv,0,0,W,H);}
+  ctx.fillStyle='#3c7a5b';for(const f of sim.food){if(cull&&(f.x<vx0||f.x>vx1||f.y<vy0||f.y>vy1))continue;ctx.fillRect(f.x-1.2,f.y-1.2,2.4,2.4);}
   for(let i=0;i<sim.tribes.length;i++)for(let j=i+1;j<sim.tribes.length;j++){const tr=sim.tr[i][j];if(tr==='none')continue;const A=sim.tribes[i],B=sim.tribes[j];if(A._dead||B._dead)continue;
     ctx.strokeStyle=tr==='ally'?'#7ee08155':'#f4cf6a33';ctx.lineWidth=tr==='ally'?2:1;ctx.setLineDash(tr==='ally'?[]:[4,4]);
     ctx.beginPath();ctx.moveTo(capital(A).x,capital(A).y);ctx.lineTo(capital(B).x,capital(B).y);ctx.stroke();ctx.setLineDash([]);}
@@ -1446,7 +1542,7 @@ function render(){
     if(cap0&&fa>=0&&fa<16){ctx.beginPath();ctx.arc(b.x,b.y,R+4+fa*2.6,0,7);ctx.strokeStyle=`rgba(233,192,123,${(1-fa/16)*0.65})`;ctx.lineWidth=2;ctx.stroke();}
     const hp=clamp(b.hp/CFG.cityHP);ctx.beginPath();ctx.arc(b.x,b.y,R+3,-Math.PI/2,-Math.PI/2+hp*7,false);ctx.strokeStyle=hp>0.4?'#8ef0bf':'#ff6b6b';ctx.lineWidth=2.5;ctx.stroke();});}
   const FIGLOD=view.z>=2.2?1:1+0.5*Math.min(1,(2.2-view.z)/1.2);          // uzaktan bakışta kişiler %50'ye kadar büyür (okunabilirlik)
-  for(const a of sim.agents){const stg=a.role==='CHILD'?'child':lifeStage(a),isR=isRulerOf(a),sp=figure(a,isR),mv=a.act!=='HEARTH'&&a.act!=='CLINIC'&&a.act!=='MARKET'&&a.act!=='LURK'&&a.act!=='CRAFT'&&a.act!=='PRAY',bob=mv&&!settings.reduceMotion?Math.sin(animT*0.45+a.id)*0.5:0;
+  for(const a of sim.agents){if(cull&&(a.x<vx0||a.x>vx1||a.y<vy0||a.y>vy1))continue;const stg=a.role==='CHILD'?'child':lifeStage(a),isR=isRulerOf(a),sp=figure(a,isR),mv=a.act!=='HEARTH'&&a.act!=='CLINIC'&&a.act!=='MARKET'&&a.act!=='LURK'&&a.act!=='CRAFT'&&a.act!=='PRAY',bob=mv&&!settings.reduceMotion?Math.sin(animT*0.45+a.id)*0.5:0;
     if(sp.c){const h=(stg==='child'?6.6:stg==='elder'?9.4:10)*(isR?1.12:1)*FIGLOD,w=h*0.75;ctx.drawImage(sp.c,a.x-w/2,a.y-h*0.88+bob,w,h);}
     else{ctx.fillStyle=a.color;ctx.beginPath();ctx.arc(a.x,a.y,2.4,0,7);ctx.fill();}
     if(a.carrying){ctx.fillStyle=a._loot?'#f4cf6a':'#8ef0bf';ctx.fillRect(a.x-1.2,a.y-11.2,2.4,2.4);}
@@ -1509,7 +1605,7 @@ function kStatus(t){if(t._dead)return `<span style="color:#ff6b6b">düştü</spa
 const AGE_B=[0,1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,200],ageCls=y=>{let i=0;while(y>=AGE_B[i+1])i++;return i;};
 function dmYear(y){return sim.dm.yr[y]||(sim.dm.yr[y]={b:0,n:0,ageSum:0,old:0,hunger:0,war:0,birth:0,dA:new Array(21).fill(0),ex:new Array(21).fill(0)});}
 function dmExposure(){const Y=dmYear(Math.floor(sim.tick/CFG.yearLen));for(const a of sim.agents)Y.ex[ageCls(ageYears(a))]++;}
-function archivePerson(a,violent){if(UI&&typeof toast==='function'&&watchIds.includes(a.id))toast(`† ${a.name} ${a.surname} öldü`,'watch',{id:a.id});const A=(sim.arch=sim.arch||new Map()),age=ageYears(a),t=sim.tribes[a.tribe];
+function archivePerson(a,violent){sim._peopleDirty=true;if(UI&&typeof queueToast==='function'&&watchIds.includes(a.id))queueToast(`† ${a.name} ${a.surname} öldü`,'watch',{id:a.id});const A=(sim.arch=sim.arch||new Map()),age=ageYears(a),t=sim.tribes[a.tribe];
   const cause=a._divine?'tanrının gazabıyla öldü':a._childbirth?'doğum sırasında öldü':violent&&a._killer?`${a._killer.name} ${a._killer.surname} tarafından öldürüldü`:a._natural?(age>=60?'yaşlılıktan öldü':'hastalıktan öldü'):'açlıktan öldü';
   A.set(a.id,{id:a.id,name:a.name,surname:a.surname,sex:a.sex,born:a.born,died:sim.tick,tribe:a.tribe,tribeName:t?t.name:'?',color:a.color,role:a.role,gen:a.gen,parents:a.parents.slice(),children:a.children.slice(),spouse:a.spouse,spouseName:a.spouseName,kills:a.kills||0,cause,events:(a.events||[]).slice(),prose:'',reign:a.reign||0,killerId:violent&&a._killer?a._killer.id:null,pers:persWords(a)});
   const R=A.get(a.id);try{R.prose=lifeProse(Object.assign({},a,{diedAt:sim.tick}));}catch(e){}
@@ -1540,15 +1636,39 @@ function renderPyramid(){const el=document.getElementById('pyramid');if(!el||!si
   let h=`<div style="font-size:12px;color:var(--muted);margin-bottom:6px">${sim.agents.length} kişi · geçen yıl <b style="color:#7ee081">+${sim.vit.lb} doğum,</b> <b style="color:#ff9b5b">−${sim.vit.ld} ölüm</b> · ${SEASONS[seasonIdx(sim.tick)]}</div><div style="display:grid;grid-template-columns:1fr 36px 1fr;gap:3px 4px;align-items:center;font-size:11.5px;color:var(--muted)">`;
   for(let b=7;b>=0;b--){h+=`<div style="display:flex;justify-content:flex-end"><div style="height:7px;width:${M[b]/mx*100}%;background:#7aa2f7;border-radius:2px 0 0 2px"></div></div><div style="text-align:center;font-family:var(--mono)">${b*10}${b===7?'+':''}</div><div><div style="height:7px;width:${F[b]/mx*100}%;background:#f0a6d0;border-radius:0 2px 2px 0"></div></div>`;}
   el.innerHTML=h+'</div><div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:4px"><span>erkek</span><span>yaş</span><span>kadın</span></div>';}
-function updateStats(){if(typeof renderGods==='function')renderGods();renderPyramid();renderMetrics();renderCityCard();renderWatch();const deadIds=sim.tribes.filter(t=>t._dead).map(t=>t.id),hide=new Set(deadIds.slice(0,Math.max(0,deadIds.length-3)));
-  document.querySelector('#stats tbody').innerHTML=(hide.size?`<tr><td style="color:var(--muted);font-size:12px">${hide.size} eski krallık düştü</td><td></td></tr>`:'')+sim.tribes.filter(t=>!hide.has(t.id)).slice().sort((x,y)=>(x._dead?1:0)-(y._dead?1:0)||y.pop-x.pop).map(t=>{
+function renderKingdomTable(){if(!sim)return;
+  const deadIds=sim.tribes.filter(t=>t._dead).map(t=>t.id),hide=new Set(deadIds.slice(0,Math.max(0,deadIds.length-3)));
+  const tb=document.querySelector('#stats tbody');if(!tb)return;
+  tb.innerHTML=(hide.size?`<tr><td style="color:var(--muted);font-size:12px">${hide.size} eski krallık düştü</td><td></td></tr>`:'')+sim.tribes.filter(t=>!hide.has(t.id)).slice().sort((x,y)=>(x._dead?1:0)-(y._dead?1:0)||y.pop-x.pop).map(t=>{
   if(t._dead)return `<tr><td style="opacity:.45"><span class="kname">${t.name}</span><div class="krow">düştü</div></td><td style="text-align:right">—</td></tr>`;
   const c=t.counts;return `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${t.color};margin-right:8px"></span>
     <span class="kname">${t.name}</span>
     <div class="krow">${t.ruler!=null&&sim.byId.get(t.ruler)?`👑 <a href="#" onclick="selectLegend(${t.ruler});return false" style="color:#e5c07b">${sim.byId.get(t.ruler).name}</a> (${t.dynasty}) · `:''}şehir ${t.cities.length} · toprak ${t.land} · <b>${ERA5[t.era-1]}</b> (${Object.keys(t.techs).length} buluş)${t.cultId&&t.cultId!=='—'?` · <span style="color:#c9a3e5">◈ ${t.cultId}</span>`:''} · meşruiyet ${(t.legit*100)|0}%${t.unrest>0.15?` · <span style="color:#ff6b6b">huzursuzluk ${(t.unrest*100)|0}%</span>`:''}</div>
     <div class="roles"><span>●${c.FARMER||0}</span><span>▲${c.SOLDIER||0}</span><span>✚${c.DOCTOR||0}</span><span>◆${c.MERCHANT||0}</span><span>✦${c.SPY||0}</span><span>⚒${c.ARTISAN||0}</span><span>☩${c.PRIEST||0}</span><span style="opacity:.6">çocuk ${c.CHILD||0}</span></div>
-    <div class="status">${kStatus(t)}${kBadges(t)}</div></td><td style="text-align:right;font-family:var(--mono)">${t.pop}</td></tr>`;}).join('');renderLegends(null,true);
-  try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)for(const id of ['stats','pyramid','metrics','cityCard','watchBar','godBox']){const el=document.getElementById(id);if(el)I18N.localizeSubtree(el);}}catch(_){ }}
+    <div class="status">${kStatus(t)}${kBadges(t)}</div></td><td style="text-align:right;font-family:var(--mono)">${t.pop}</td></tr>`;}).join('');}
+function updateStats(force=true){if(!UI||!sim)return;
+  const now=performance.now();if(!force&&now-UILAST.stats<UI_EVERY.stats){UIDIRTY.stats=true;return;}
+  UILAST.stats=now;UIDIRTY.stats=false;
+  if(activePage==='kral'||(force&&!document.querySelector('#stats tbody')?.textContent))renderKingdomTable();
+  if(activePage==='dun'){if(typeof renderGods==='function')renderGods();renderPyramid();renderMetrics();renderLegendCard();}
+  if(activePage==='bire')renderCityCard();
+  renderWatch();
+  try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree){const ids=['watchBar','feed'];
+    if(activePage==='kral')ids.push('stats');if(activePage==='dun')ids.push('godBox','pyramid','metrics','legends');if(activePage==='bire')ids.push('cityCard');
+    for(const id of ids){const el=document.getElementById(id);if(el)I18N.localizeSubtree(el);}}}catch(_){ }}
+function flushUI(force=false){if(!UI||!sim)return;const now=performance.now();
+  {const pb=document.getElementById('playBtn');if(pb){const tx=playing?'❚❚':'▶';if(pb.textContent!==tx)pb.textContent=tx;}}
+  if(force)UIDIRTY.stats=UIDIRTY.inspect=UIDIRTY.feed=UIDIRTY.stories=true;
+  if(UIDIRTY.stats||activePage==='kral'||activePage==='dun')updateStats(force);
+  if(sim._advOpen){sim._advOpen=false;if(activePage!=='dan')showTab('dan');else renderAdvisor();}
+  else if(UIDIRTY.adv&&activePage==='dan')renderAdvisor();
+  if(activePage==='bire'&&selectedId!=null&&(UIDIRTY.inspect||force)&&(force||now-UILAST.inspect>=UI_EVERY.inspect)){UILAST.inspect=now;renderInspect();UIDIRTY.inspect=false;}
+  if(UIDIRTY.feed&&(force||now-UILAST.feed>=UI_EVERY.feed)){UILAST.feed=now;renderFeed();}
+  if(UIDIRTY.stories&&(force||now-UILAST.stories>=UI_EVERY.stories)){UILAST.stories=now;renderStories();}
+  const ho=document.getElementById('histOverlay');
+  if(ho&&ho.style.display==='block'&&(playing||force)&&(force||now-UILAST.history>=UI_EVERY.history)){UILAST.history=now;const q=document.getElementById('lgQ');renderLegends(!!(q&&document.activeElement===q),true);}
+  if(pendingToasts.length&&now-(flushUI._toastAt||0)>=240){flushUI._toastAt=now;const T=pendingToasts[0];if(toast(T.text,T.kind,T.ref,true))pendingToasts.shift();}
+}
 const STAGE_TR={child:'çocuk',adult:'yetişkin',elder:'yaşlı'};
 function moodLabel(a){
   if(a.rebel)return '⚑ öfkeli, isyanda';
@@ -1596,9 +1716,9 @@ const dedupe=a=>[...new Set(a)];
 function needBar(label,v,col,txt){return `<div class="nb"><span>${label}</span><div class="nbb"><i style="width:${(clamp(v)*100)|0}%;background:${col}"></i></div><b>${txt}</b></div>`;}
 function topTraits(a){const all=[...T5.map(k=>[a.pers[k]-0.5,a.pers[k]>=0.5?P_HI[k]:P_LO[k]]),...V4.map(k=>[a.vals[k]-0.5,({trad:['gelenekçi','yenilikçi'],comm:['cemaatçi','bireyci'],honor:['onurlu','çıkarcı'],curio:['meraklı','kayıtsız']})[k][a.vals[k]>=0.5?0:1]])];
   return dedupe(all.sort((x,y)=>Math.abs(y[0])-Math.abs(x[0])).map(x=>x[1])).slice(0,3);}
-function renderInspect(){const el=document.getElementById('inspect');if(selectedId!=null&&selCity){selCity=null;const cc=document.getElementById('cityCard');if(cc)cc.style.display='none';}
-  const a=sim.agents.find(x=>x.id===selectedId)||(sim.legends||[]).find(x=>x.id===selectedId)||(selectedId!=null&&sim.arch&&sim.arch.get(selectedId)?null:null);
-  if(!a){el.innerHTML='<div class="empty" data-i18n-html="inspectEmpty">Haritada bir figüre tıkla, <b>Kişiler</b> sekmesinden birini seç ya da <button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 ilginç bir kişi</button> göster.</div>';return;}
+function renderInspect(){if(activePage!=='bire'){UIDIRTY.inspect=false;return;}const el=document.getElementById('inspect');if(!el){UIDIRTY.inspect=false;return;}if(selectedId!=null&&selCity){selCity=null;const cc=document.getElementById('cityCard');if(cc)cc.style.display='none';}
+  const P=getPerson(selectedId),a=P&&P.live?P.a:((sim.legends||[]).find(x=>x.id===selectedId)||null);
+  if(!a){el.innerHTML='<div class="empty" data-i18n-html="inspectEmpty">Haritada bir figüre tıkla, <b>Kişiler</b> sekmesinden birini seç ya da <button onclick="randomInteresting()" style="padding:3px 9px;font-size:12px">🎲 ilginç bir kişi</button> göster.</div>';try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);}catch(_){}UIDIRTY.inspect=false;return;}
   const t=sim.tribes[a.tribe],dead=!!a.diedAt,yr=Math.round(dead?(a.diedAt-a.born)/CFG.yearLen:ageYears(a)),stage=dead?'—':(a.role==='CHILD'?'çocuk':STAGE_TR[lifeStage(a)]);
   const actTxt=a.rebel?`<span style="color:#ff8a7a">⚑ isyanda</span> · ${ACT_TR[a.act]||''}`:(ACT_TR[a.act]||'');const watched=watchIds.includes(a.id);
   const opts=!dead&&a._opts&&a._optsT>=sim.tick-4?a._opts.map(([k,v])=>`<div class="opt"><span>${ACT_TR[k]||k}</span><div class="nbb"><i style="width:${Math.min(100,v*100)|0}%"></i></div><b>${v.toFixed(2)}</b></div>`).join(''):'';
@@ -1617,17 +1737,23 @@ function renderInspect(){const el=document.getElementById('inspect');if(selected
     <details><summary>Kişilik ve değerler</summary>${traitBars(a)}</details>
     <details><summary>Anılar</summary>${memHTML(a)||'<div class="empty">Henüz önemli bir anı yok.</div>'}</details>
     <details><summary>Yaşam çizgisi ve hikâye</summary><div style="margin:4px 0">${lifeline(a)}</div><div class="prose">${lifeProse(a)}</div></details>`;
-  const f=document.getElementById('pFig');if(f&&f.getContext){const g=f.getContext('2d'),sp=figure(a,isRulerOf(a));if(sp&&sp.c){g.imageSmoothingEnabled=true;g.drawImage(sp.c,0,0,72,96);}}}
+  const f=document.getElementById('pFig');if(f&&f.getContext){const g=f.getContext('2d'),sp=figure(a,isRulerOf(a));if(sp&&sp.c){g.imageSmoothingEnabled=true;g.drawImage(sp.c,0,0,72,96);}}
+  try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);}catch(_){}
+  UIDIRTY.inspect=false;}
 /* Takip listesi (RimWorld kolonist çubuğu benzeri) */
 let watchIds=[];
+/* Ölüm alanları: canlı legend'da diedAt/deathCause, arşiv kaydında died/cause/pers(string). */
+const personDiedAt=a=>a.died!=null?a.died:(a.diedAt!=null?a.diedAt:sim.tick);
+const personCause=a=>a.cause!=null?a.cause:(a.deathCause||'');
+const personPers=a=>typeof a.pers==='string'?a.pers:(a.pers?persWords(a):'');
 function toggleWatch(id){const i=watchIds.indexOf(id);if(i>=0)watchIds.splice(i,1);else{if(watchIds.length>=8)watchIds.shift();watchIds.push(id);}renderWatch();renderInspect();}
 function renderWatch(){const el=document.getElementById('watchBar');if(!el||!sim)return;
-  for(const id of watchIds){const a=sim.byId&&sim.byId.get(id);if(!a)continue;const n=(a.events||[]).length;if(a._wLen==null)a._wLen=n;else if(n>a._wLen){for(const e of a.events.slice(a._wLen))toast(`${a.name}: ${e.e}`,'watch',{id});a._wLen=n;}}
+  for(const id of watchIds){const a=sim.byId&&sim.byId.get(id);if(!a)continue;const n=(a.events||[]).length;if(a._wLen==null)a._wLen=n;else if(n>a._wLen){for(const e of a.events.slice(a._wLen))queueToast(`${a.name}: ${e.e}`,'watch',{id});a._wLen=n;}}
   if(!watchIds.length){el.innerHTML='<span class="empty" style="font-size:13px">İzleme listesi boş: bir kişinin kartında ☆ ile ekle (en çok 8); başına olay gelince bildirim çıkar.</span>';if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);return;}
   el.innerHTML=watchIds.map(id=>{const P=getPerson(id);if(!P)return '';const a=P.a,live=P.live,mood=live?clamp(a.content??0.6):0;
-    const col=live?`hsl(${Math.round(mood*120)},60%,50%)`:'#6a6a6a',st=live?(ACT_TR[a.act]||''):'† '+(a.cause||'');
+    const col=live?`hsl(${Math.round(mood*120)},60%,50%)`:'#6a6a6a',st=live?(ACT_TR[a.act]||''):'† '+personCause(a);
     return `<div class="wchip ${selectedId===id?'on':''}" style="border-color:${col}" onclick="${live?`followId(${id})`:`openLegends('kisi',${id})`}" title="${esc(a.name+' '+a.surname)} · ${esc(st)}"><canvas width="22" height="30" data-w="${id}"></canvas><span class="wn">${esc(a.name)}</span><span class="wx" onclick="event.stopPropagation();toggleWatch(${id})">×</span></div>`;}).join('');
-  el.querySelectorAll('canvas[data-w]').forEach(cn=>{const P=getPerson(+cn.dataset.w);if(!P)return;const a=P.a,g=cn.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role,sex:a.sex,born:sim.tick-(a.died-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c)g.drawImage(sp.c,0,0,22,30);});
+  el.querySelectorAll('canvas[data-w]').forEach(cn=>{const P=getPerson(+cn.dataset.w);if(!P)return;const a=P.a,g=cn.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role,sex:a.sex,born:sim.tick-(personDiedAt(a)-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c)g.drawImage(sp.c,0,0,22,30);});
   if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);}
 function interestScore(a){let s=0;if(isRulerOf(a))s+=6;s+=(a.kills||0)*1.5;if(a.rebel)s+=4;if(a.goal&&a.goal.type==='REVENGE')s+=5;if(a.pregUntil>0)s+=2;if(a.spouse==null&&lifeStage(a)==='adult')s+=0.5;s+=Math.min(4,(a.children||[]).length*0.6);s+=(a.mem||[]).length*0.15;if(a.act==='FIGHT'||a.act==='INVADE')s+=2;if(lifeStage(a)==='elder')s+=1;return s;}
 function randomInteresting(){const L=sim.agents.filter(a=>a.energy>0&&lifeStage(a)!=='child');if(!L.length)return;let tot=0;const w=L.map(a=>{const x=0.5+interestScore(a);tot+=x;return x;});let r=rngUI()*tot,k=0;while(k<L.length-1&&(r-=w[k])>0)k++;followId(L[k].id);}
@@ -1679,7 +1805,7 @@ function legendTitle(a){const P=[];
   const yrs=a.diedAt?Math.round((a.diedAt-a.born)/CFG.yearLen):Math.round(ageYears(a));
   if(!P.length){if(a.gen>=5)P.push('Hanedan Atası');else if(a.gen>=4)P.push('Soylu');else if(yrs>=70)P.push('Bilge Yaşlı');else P.push('Onurlu');}
   return P.slice(0,2).join(' · ');}
-function renderLegends(){const el=document.getElementById('legends');if(!el)return;
+function renderLegendCard(){const el=document.getElementById('legends');if(!el)return;
   if(!sim.legends||!sim.legends.length){const top=allPeople().sort((x,y)=>personKey(y.a,y.live)-personKey(x.a,x.live)).slice(0,5);
     el.innerHTML='<div class="empty" style="margin-bottom:6px">Henüz efsane yok; şimdilik öne çıkanlar:</div>'+top.map(p=>`<div class="lgitem" onclick="openLegends('kisi',${p.a.id})"><span class="dot" style="background:${p.a.color||'#888'}"></span><span class="nm">${esc(p.a.name)} ${esc(p.a.surname)}${p.live?'':' †'}</span><span class="mt">${esc(ROLE_TR[p.a.role]||'')}</span></div>`).join('');return;}
   el.innerHTML=sim.legends.slice(0,8).map(a=>{const t=sim.tribes[a.tribe];
@@ -1694,10 +1820,25 @@ function selectLegend(id){selectedId=id;showTab('bire');renderInspect();}
 
 /* ---------- Döngü & kontroller ---------- */
 let effSteps=1,effN=0;
-function loop(){if(playing){const t0=performance.now();let n=0;stepAcc+=stepsPerFrame;const todo=Math.floor(stepAcc);stepAcc-=todo;for(let i=0;i<todo;i++){step();n++;if(performance.now()-t0>26){stepAcc=0;break;}}effSteps=effSteps*0.97+(stepsPerFrame<1?stepsPerFrame:n)*0.03;
-    if(++effN%20===0){const el=document.getElementById('effSpd');if(el){const low=stepsPerFrame>1&&effSteps<stepsPerFrame*0.88;el.style.display=low?'inline-block':'none';el.textContent='gerçek hız ≈'+effSteps.toFixed(1)+'×';el.title='Bilgisayar istenen hızı yetiştiremiyor (çok kişi var)';}}}
-  render();requestAnimationFrame(loop);}
-document.getElementById('playBtn').onclick=e=>{playing=!playing;e.target.textContent=playing?'❚❚':'▶';};
+function perfFrame(dt,step,render,ui){if(!PERF||!UI)return;perfFrames.push(dt);if(perfFrames.length>180)perfFrames.shift();
+  const now=performance.now();if(now-perfLastPaint<500)return;perfLastPaint=now;
+  const f=perfFrames.slice().sort((a,b)=>a-b),p95=f.length?f[Math.min(f.length-1,(f.length*.95)|0)]:0;
+  let el=document.getElementById('perfBox');
+  if(!el){el=document.createElement('div');el.id='perfBox';el.style.cssText='position:fixed;left:8px;bottom:8px;z-index:99999;background:#000d;color:#9fe;padding:6px 8px;font:12px monospace;border:1px solid #345;border-radius:4px;pointer-events:none;white-space:pre';el.setAttribute('data-i18n-skip','');document.body.appendChild(el);}
+  el.textContent=`step ${step.toFixed(1)}ms · render ${render.toFixed(1)}ms · overlay ${perfOv.toFixed(1)}ms · ui ${ui.toFixed(1)}ms\nframe p95 ${p95.toFixed(1)}ms · ${sim.agents.length} kişi / ${sim.tribes.filter(t=>!t._dead).length} krallık`;}
+function loop(ts){const now=ts||performance.now();if(!lastFrameTs)lastFrameTs=now;const dt=Math.min(50,Math.max(0,now-lastFrameTs));lastFrameTs=now;
+  if(playing){
+    // Gerçek zamanlı biriktirici: 60 Hz'de 1× = 60 tick/s, 144 Hz'de de aynı.
+    stepAcc+=dt/1000*60*stepsPerFrame;let todo=Math.floor(stepAcc);stepAcc-=todo;
+    const t0=performance.now();let n=0;for(let i=0;i<todo;i++){step();n++;if(!playing){stepAcc=0;break;}if(performance.now()-t0>SIM_BUDGET){stepAcc=0;break;}}perfStep=performance.now()-t0;
+    const target=Math.max(0.0001,dt/1000*60),inst=Math.min(stepsPerFrame*1.6,n/target);effSteps=effSteps*0.94+inst*0.06;
+    {const el=document.getElementById('effSpd');if(el){const low=stepsPerFrame>1&&effSteps<stepsPerFrame*0.88;if(!low&&el.style.display!=='none')el.style.display='none';if(++effN%20===0){el.style.display=low?'inline-block':'none';el.textContent='gerçek hız ≈'+effSteps.toFixed(1)+'×';el.title='Bilgisayar istenen hızı yetiştiremiyor (çok kişi var)';}}}}
+  else{stepAcc=0;perfStep=0;}
+  const tr=performance.now();render();perfRender=performance.now()-tr;
+  const tu=performance.now();flushUI();perfUI=performance.now()-tu;
+  if(PERF)perfFrame(dt,perfStep,perfRender,perfUI);
+  requestAnimationFrame(loop);}
+document.getElementById('playBtn').onclick=e=>{playing=!playing;stepAcc=0;lastFrameTs=0;e.target.textContent=playing?'❚❚':'▶';};
 document.getElementById('stepBtn').onclick=()=>{step();render();};
 const seedIn=document.getElementById('seedIn');
 SEED=new URLSearchParams(location.search).get('seed')||newSeedStr();seedIn.value=SEED;
@@ -1705,7 +1846,7 @@ document.getElementById('resetBtn').onclick=()=>{SEED=seedIn.value.trim()||newSe
 document.getElementById('seedNewBtn').onclick=()=>{seedIn.value=newSeedStr();document.getElementById('resetBtn').onclick();};
 const SPD=[0.25,0.5,1,2,4,8],s=document.getElementById('speed'),sv=document.getElementById('speedVal');
 const spdTxt=v=>v===0.25?'¼×':v===0.5?'½×':v+'×';
-s.oninput=()=>{stepsPerFrame=SPD[+s.value]||1;stepAcc=0;sv.textContent=spdTxt(stepsPerFrame);document.querySelectorAll('.spdBtn').forEach(b=>b.classList.toggle('on',+b.dataset.v===stepsPerFrame));};
+s.oninput=()=>{stepsPerFrame=SPD[+s.value]||1;stepAcc=0;effSteps=stepsPerFrame;effN=0;const pe=document.getElementById('effSpd');if(pe&&stepsPerFrame<=1)pe.style.display='none';sv.textContent=spdTxt(stepsPerFrame);document.querySelectorAll('.spdBtn').forEach(b=>b.classList.toggle('on',+b.dataset.v===stepsPerFrame));};
 document.querySelectorAll('.spdBtn').forEach(b=>b.onclick=()=>{s.value=SPD.indexOf(+b.dataset.v);s.oninput();});s.oninput();
 const f=document.getElementById('food'),fv=document.getElementById('foodVal'),FL=['yok','çok kıt','kıt','orta','bol','çok bol','bereket'];f.oninput=()=>{foodRate=+f.value;fv.textContent=FL[foodRate];};
 const g=document.getElementById('agg'),gvl=document.getElementById('aggVal');g.oninput=()=>{aggMul=(+g.value)/10;gvl.textContent=aggMul.toFixed(1)+'×';};
@@ -1726,7 +1867,14 @@ cv.addEventListener('pointerdown',e=>{const p=canvasXY(e),z=Math.max(1,view.z);l
   if(selectedId!=null||selCity){selectedId=null;selCity=null;view.follow=false;try{followBtn.classList.remove('primary');}catch(_){}renderCityCard();renderInspect();render();}});
 
 /* Sekmeli çekmece + kısayollar */
-function showTab(t){if(t==='dan'&&typeof renderAdvisor==='function')renderAdvisor();if(t==='kisi'&&typeof renderPeople==='function')renderPeople();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('on',p.dataset.p===t));try{localStorage.setItem('tab',t);}catch(e){}{const sd=document.querySelector('.side');if(sd&&sd.scrollTop)sd.scrollTop=0;}}
+function showTab(t){activePage=t;UIDIRTY.stats=true;if(t==='bire'&&selectedId!=null)UIDIRTY.inspect=true;if(t==='hik')UIDIRTY.stories=true;
+  if(t==='dan'&&typeof renderAdvisor==='function')renderAdvisor();
+  if(t==='kisi'&&typeof renderPeople==='function')renderPeople();
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));document.querySelectorAll('.pg').forEach(p=>p.classList.toggle('on',p.dataset.p===t));
+  if(t==='bire'){updateStats(true);if(selectedId!=null)renderInspect();else{renderInspect();renderCityCard();}}
+  else if(t==='hik')renderStories();
+  else if(t==='kral'||t==='dun')updateStats(true);
+  try{localStorage.setItem('tab',t);}catch(e){}const sd=document.querySelector('.side');if(sd&&sd.scrollTop)sd.scrollTop=0;}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
 document.addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(tg==='INPUT'||tg==='SELECT'||tg==='TEXTAREA')return;
   if(e.code==='Space'){e.preventDefault();document.getElementById('playBtn').click();}
@@ -1738,37 +1886,40 @@ document.addEventListener('keydown',e=>{const tg=e.target&&e.target.tagName;if(t
   else if(e.key==='d'||e.key==='D'){if(window.__dirToggle)window.__dirToggle();}});
 
 /* ======================= LEGENDS: ansiklopedik tarih gezintisi ======================= */
-const LG={tab:'dunya',sel:null,q:'',filt:'hepsi',kfilt:'hepsi',stack:[]};
+const LG={tab:'dunya',sel:null,q:'',filt:'hepsi',kfilt:'hepsi',wlimit:200,stack:[]};
 const yrOf=t=>Math.floor((t||0)/CFG.yearLen);
 const esc=x=>String(x==null?'':x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function getPerson(id){const a=sim.byId&&sim.byId.get(id);if(a&&a.energy>0)return {live:true,a};const r=sim.arch&&sim.arch.get(id);return r?{live:false,a:r}:null;}
+function getPerson(id){if(!sim||id==null)return null;const by=sim.byId&&sim.byId.get(id);if(by&&by.energy>0)return {live:true,a:by};if(!by){const live=sim.agents&&sim.agents.find(a=>a.id===id&&a.energy>0);if(live)return {live:true,a:live};}const r=(sim.arch&&sim.arch.get(id))||((sim.legends||[]).find(x=>x.id===id));return r?{live:false,a:r}:null;}
 function lgPersonLink(id,fallback){const p=getPerson(id);if(!p)return esc(fallback||'?');const a=p.a;return `<a href="#" class="lgl" onclick="lgGo('p',${id});return false">${esc(a.name)} ${esc(a.surname)}${p.live?'':' †'}</a>`;}
 function lgTribeLink(id){const t=sim.tribes[id];if(!t)return '?';return `<a href="#" class="lgl" style="color:${t.color}" onclick="lgGo('k',${id});return false">${esc(t.name)}</a>`;}
 function lgLinkText(text,tr){let h=esc(window.I18N?I18N.translate(text):text);for(const id of (tr||[])){const t=sim.tribes[id];if(t)h=h.split(esc(t.name)).join(`<a href="#" class="lgl" style="color:${t.color}" onclick="lgGo('k',${id});return false">${esc(t.name)}</a>`);}return '<span data-i18n-skip data-i18n-source="'+esc(text)+'">'+h+'</span>';}
 function lgGo(type,id,noPush){if(!noPush)LG.stack.push({tab:LG.tab,sel:LG.sel,q:LG.q,filt:LG.filt,kfilt:LG.kfilt});LG.sel={type,id};LG.tab=type==='p'?'kisi':type==='k'?'kral':type==='w'?'sav':LG.tab;renderLegends();const d=document.getElementById('lgDetail');if(d)d.scrollTop=0;}
 function lgBack(){const p=LG.stack.pop();if(p){LG.tab=p.tab;LG.sel=p.sel;LG.q=p.q||'';LG.filt=p.filt||'hepsi';LG.kfilt=p.kfilt||'hepsi';renderLegends();}}
 function openLegends(tab,id){document.getElementById('histOverlay').style.display='block';if(tab==='kral'&&id!=null){LG.tab='kral';LG.sel={type:'k',id};}else if(tab==='kisi'&&id!=null){LG.tab='kisi';LG.sel={type:'p',id};}else if(tab){LG.tab=tab;LG.sel=null;}renderLegends();}
-function lgTab(t){LG.tab=t;LG.sel=null;LG.q='';LG.stack=[];renderLegends();}
+function lgTab(t){LG.tab=t;LG.sel=null;LG.q='';LG.stack=[];if(t==='sav')LG.wlimit=200;renderLegends();}
 function lgSetQ(v){LG.q=v;renderLegends(true);}
-function personKey(a,live){const age=live?ageYears(a):((a.died-a.born)/CFG.yearLen);return (a.kills||0)*3+(a.gen||0)*2+age/8+(a.reign||0)*1.2+(live?2:0);}
-function allPeople(){const out=[];for(const a of sim.agents)out.push({live:true,a});if(sim.arch)for(const r of sim.arch.values())out.push({live:false,a:r});return out;}
+function personKey(a,live){const age=live?ageYears(a):((personDiedAt(a)-a.born)/CFG.yearLen);return (a.kills||0)*3+(a.gen||0)*2+age/8+(a.reign||0)*1.2+(live?2:0);}
+let peopleCache=null,peopleCacheSim=null,peopleCacheN=-1,peopleCacheA=-1;
+function allPeople(){const n=sim.agents.length,a=sim.arch?sim.arch.size:0;if(peopleCache&&!sim._peopleDirty&&peopleCacheSim===sim&&peopleCacheN===n&&peopleCacheA===a)return peopleCache;
+  const out=[];for(const x of sim.agents)out.push({live:true,a:x});if(sim.arch)for(const r of sim.arch.values())out.push({live:false,a:r});peopleCache=out;peopleCacheSim=sim;peopleCacheN=n;peopleCacheA=a;sim._peopleDirty=false;return out;}
 function lgPersonDetail(id){const P=getPerson(id);if(!P)return '<div class="empty">Bu kişinin kaydı artık tutulmuyor.</div>';const a=P.a,live=P.live;
-  const t=sim.tribes[a.tribe],yb=Math.floor(a.born/CFG.yearLen),age=live?Math.round(ageYears(a)):Math.round((a.died-a.born)/CFG.yearLen);
+  const t=sim.tribes[a.tribe],yb=Math.floor(a.born/CFG.yearLen),died=personDiedAt(a),age=live?Math.round(ageYears(a)):Math.round((died-a.born)/CFG.yearLen);
   const events=(a.events||[]).map(e=>`<li><b>${(e.t||0)<0?'kuruluş öncesi':'Yıl '+yrOf(e.t)}</b> · ${esc(e.e)}</li>`).join('');
   const rulerOf=sim.tribes.filter(k=>k.rulers.some(r=>r.id===id)).map(k=>{const rs=k.rulers.filter(r=>r.id===id);return `${lgTribeLink(k.id)} (${rs.map(r=>`Y${yrOf(r.from)}–${r.to!=null?'Y'+yrOf(r.to):'…'} · ${esc(r.how)}`).join('; ')})`;});
   const fam=[];
   if(a.spouse!=null||a.spouseName)fam.push(['eş',a.spouse!=null?lgPersonLink(a.spouse,a.spouseName):esc(a.spouseName)]);
   if(a.parents&&a.parents.length)fam.push(['ebeveynler',a.parents.map(x=>lgPersonLink(x)).join(', ')]);
   if(a.children&&a.children.length)fam.push(['çocuklar',a.children.map(x=>lgPersonLink(x)).join(', ')]);
-  const killer=!live&&a.killerId!=null?` · katili ${lgPersonLink(a.killerId)}`:'';
-  const prose=live?lifeProse(a):a.prose;
-  const pw=live?persWords(a):a.pers;
+  const killerId=a.killerId!=null?a.killerId:(a._killer?a._killer.id:null);
+  const killer=!live&&killerId!=null?` · katili ${lgPersonLink(killerId)}`:'';
+  const prose=live?lifeProse(a):(a.prose||(typeof a.pers==='string'?'':lifeProse(a)));
+  const pw=personPers(a);
   return `<div class="lgback">${LG.stack.length?'<button onclick="lgBack()">← Geri</button>':''}</div>
    <div style="display:flex;gap:16px;align-items:flex-start"><canvas id="lgFig" width="72" height="96" style="background:#1a110a;border:1px solid var(--line);border-radius:6px"></canvas>
    <div><div class="lgname" style="color:${a.color||(t?t.color:'#ccc')}">${esc(a.name)} ${esc(a.surname)}</div>
-   <div class="lgsub">${live?`yaşıyor · ${age} yaşında`:`${a.born<0?'kuruluştan önce doğdu':'Yıl '+yb+' doğumlu'} · Yıl ${yrOf(a.died)}'de öldü (${age} yaşında)`} · ${a.sex==='F'?'kadın':'erkek'}</div>
+   <div class="lgsub">${live?`yaşıyor · ${age} yaşında`:`${a.born<0?'kuruluştan önce doğdu':'Yıl '+yb+' doğumlu'} · Yıl ${yrOf(died)}'de öldü (${age} yaşında)`} · ${a.sex==='F'?'kadın':'erkek'}</div>
    <div class="lgsub">${t?lgTribeLink(a.tribe):esc(a.tribeName||'?')} · ${esc(ROLE_TR[a.role]||a.role||'')} · ${a.gen}. nesil${pw?' · '+esc(pw):''}</div>
-   ${!live?`<div class="lgsub">ölüm: ${esc(a.cause)}${killer}</div>`:''}
+   ${!live?`<div class="lgsub">ölüm: ${esc(personCause(a))}${killer}</div>`:''}
    ${live?`<div style="margin-top:8px"><button onclick="document.getElementById('histOverlay').style.display='none';followId(${id})">🔍 Haritada takip et</button></div>`:''}</div></div>
    <p class="lgprose">${esc(prose)}</p>
    ${rulerOf.length?`<h3>Hükümdarlık</h3><div class="lgsub">${rulerOf.join('<br>')}</div>`:''}
@@ -1800,7 +1951,7 @@ function lgKingdomDetail(id){const t=sim.tribes[id];if(!t)return '';
    <h3>Savaşlar</h3><ul class="lgul">${(sim.wars||[]).filter(w=>w.a===id||w.b===id).slice().reverse().map(w=>`<li><a href="#" class="lgl" onclick="lgGo('w',${w.id});return false">${esc(sim.tribes[w.a].name)} ⚔ ${esc(sim.tribes[w.b].name)}</a> · Y${yrOf(w.start)}${w.end!=null?'–Y'+yrOf(w.end):' →'} · ${esc(w.reason)}${w.out?' · '+esc(w.out):''}</li>`).join('')||'<li>savaş kaydı yok</li>'}</ul>
    <h3>Olaylar</h3><ul class="lgul">${ev.map(e=>`<li><b>Y${yrOf(e.t)}</b> · ${lgLinkText(e.text,e.tr)}${e.pp&&e.pp.length?' → '+e.pp.map(x=>lgPersonLink(x)).join(', '):''}</li>`).join('')||'<li>kayıt yok</li>'}</ul>
    ${!fell?`<div style="margin-top:12px;display:flex;gap:8px"><button onclick="document.getElementById('histOverlay').style.display='none';openTech();document.getElementById('techKing').value=${id};renderTechTree(${id})">⚙ Bilim ağacı</button><button onclick="document.getElementById('histOverlay').style.display='none';openCult();document.getElementById('cultKing').value=${id};renderCultureTree(${id})">◈ Kültür ağacı</button></div>`:''}`;}
-function lgWarDetail(id){const w=(sim.wars||[])[id];if(!w)return '';const A=sim.tribes[w.a],B=sim.tribes[w.b],end=w.end!=null?w.end:sim.tick,yrs=((end-w.start)/CFG.yearLen);
+function lgWarDetail(id){const w=(sim.warById&&sim.warById.get(id))||(sim.wars||[]).find(x=>x.id===id);if(!w)return '';const A=sim.tribes[w.a],B=sim.tribes[w.b],end=w.end!=null?w.end:sim.tick,yrs=((end-w.start)/CFG.yearLen);
   const ev=(sim.log||[]).filter(e=>e.tr.includes(w.a)&&e.tr.includes(w.b)&&e.t>=w.start-1&&e.t<=end+1).sort((x,y)=>x.t-y.t);
   return `<div class="lgback">${LG.stack.length?'<button onclick="lgBack()">← Geri</button>':''}</div>
    <div class="lgname"><span style="color:${A.color}">${esc(A.name)}</span> ⚔ <span style="color:${B.color}">${esc(B.name)}</span></div>
@@ -1837,8 +1988,9 @@ function renderLegends(keepFocus,keepScroll){
     list=T.map(t=>`<div class="lgitem ${LG.sel&&LG.sel.type==='k'&&LG.sel.id===t.id?'on':''}" onclick="lgGo('k',${t.id},true)"><span class="dot" style="background:${t.color}"></span><span class="nm">${esc(t.name)}</span><span class="mt">${t._dead?'yıkıldı Y'+yrOf(t._fell):t.pop+' kişi'}</span></div>`).join('');
     detail=LG.sel&&LG.sel.type==='k'?lgKingdomDetail(LG.sel.id):'<div class="empty">Soldan bir krallık seç.</div>';
   }else if(LG.tab==='sav'){
-    const Wr=(sim.wars||[]).slice().sort((x,y)=>y.start-x.start);
+    const all=(sim.wars||[]).slice().sort((x,y)=>y.start-x.start),total=all.length,Wr=all.slice(0,LG.wlimit||200);
     list=Wr.map(w=>`<div class="lgitem ${LG.sel&&LG.sel.type==='w'&&LG.sel.id===w.id?'on':''}" onclick="lgGo('w',${w.id},true)"><span class="nm">${esc(sim.tribes[w.a].name)} ⚔ ${esc(sim.tribes[w.b].name)}</span><span class="mt">Y${yrOf(w.start)}${w.end==null?' →':'–Y'+yrOf(w.end)}</span></div>`).join('')||'<div class="empty">Henüz savaş yok.</div>';
+    if(total>Wr.length)list+=`<div class="lgsub" style="padding:8px">${total} savaş kaydı · <button onclick="LG.wlimit=(LG.wlimit||200)+200;renderLegends()" style="padding:3px 9px;font-size:11px">daha fazla</button></div>`;
     detail=LG.sel&&LG.sel.type==='w'?lgWarDetail(LG.sel.id):'<div class="empty">Soldan bir savaş seç: gerekçe, süre, kayıplar, sonuç ve olay geçmişi.</div>';
   }else if(LG.tab==='olay'){
     const kinds=[['hepsi','Hepsi'],['savaş','Savaş'],['siyaset','Siyaset'],['aile','Aile'],['doğa','Doğa'],['kültür','Kültür']],q=LG.q.trim().toLocaleLowerCase('tr');
@@ -1851,7 +2003,7 @@ function renderLegends(keepFocus,keepScroll){
   }
   el.innerHTML=`<div class="lgtabs">${tabs.map(([k,n])=>`<button class="${LG.tab===k?'on':''}" onclick="lgTab('${k}')">${n}</button>`).join('')}</div>
     <div class="lgbody ${list?'':'one'}">${list?`<div class="lglist">${list}</div>`:''}<div class="lgdetail" id="lgDetail">${detail}</div></div>`;
-  const f=document.getElementById('lgFig');if(f&&LG.sel&&LG.sel.type==='p'){const P=getPerson(LG.sel.id);if(P){const a=P.a,g=f.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role==='CHILD'?'CHILD':a.role,sex:a.sex,born:sim.tick-(a.died-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c){g.imageSmoothingEnabled=true;g.drawImage(sp.c,0,0,72,96);}}}
+  const f=document.getElementById('lgFig');if(f&&LG.sel&&LG.sel.type==='p'){const P=getPerson(LG.sel.id);if(P){const a=P.a,g=f.getContext('2d');const fake=P.live?a:{id:a.id,role:a.role==='CHILD'?'CHILD':a.role,sex:a.sex,born:sim.tick-(personDiedAt(a)-a.born),color:a.color};const sp=figure(fake,false);if(sp&&sp.c){g.imageSmoothingEnabled=true;g.drawImage(sp.c,0,0,72,96);}}}
   try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(document.getElementById('histOverlay')||el);}catch(_){ }
   const newList=keepScroll?el.querySelector('.lglist'):null,newDetail=keepScroll?el.querySelector('.lgdetail'):null;
   if(newList)newList.scrollTop=listScroll;if(newDetail)newDetail.scrollTop=detailScroll;
@@ -1866,7 +2018,9 @@ window.addEventListener('i18n:change',()=>{
   const oldDetail=histOpen&&hb?hb.querySelector('.lgdetail'):null;
   const listScroll=oldList?oldList.scrollTop:0;
   const detailScroll=oldDetail?oldDetail.scrollTop:0;
+  lastDateAt=0;
   try{if(typeof render==='function')render();}catch(_){ }
+  try{if(typeof sim!=='undefined'&&sim){renderKingdomTable();const st=document.getElementById('stats');if(st&&window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(st);}}catch(_){ }
   if(histOpen){
     try{if(typeof renderLegends==='function')renderLegends(false,true);}catch(_){ }
     const restore=()=>{
@@ -1884,17 +2038,18 @@ document.getElementById('chronBtn').onclick=()=>{openLegends('olay');};
 
 /* Aşama D: toast akışı + yıllık özet */
 let toastLast=0;
-function toast(text,kind,ref){if(!UI)return;const box=document.getElementById('toasts');if(!box||!box.appendChild)return;
-  const now=performance.now();if(kind!=='watch'&&now-toastLast<900)return;toastLast=now;
-  if(settings.noToast)return;
+function toast(text,kind,ref,queued=false){if(!UI)return false;if(inStep){queueToast(text,kind,ref);return false;}const box=document.getElementById('toasts');if(!box||!box.appendChild)return false;
+  const now=performance.now();if(kind!=='watch'&&!queued&&now-toastLast<900)return false;toastLast=now;
+  if(settings.noToast)return true;
   const d=document.createElement('div');d.className='toast '+(kind||'');d.innerHTML=`<span class="tk">${kind==='watch'?'★':kind==='war'?'⚔':kind==='pol'?'♛':kind==='nat'?'☁':'•'}</span><span class="tx" title="${esc(text)}">${esc(text)}</span>`;
   d.onclick=()=>{if(ref&&ref.tab){showTab(ref.tab);d.remove();return;}if(ref&&ref.id!=null&&sim.byId.get(ref.id))followId(ref.id);else if(ref&&ref.tr!=null&&sim.tribes[ref.tr]&&!sim.tribes[ref.tr]._dead){const c=capital(sim.tribes[ref.tr]);view.z=Math.max(view.z,1.8);view.cx=c.x;view.cy=c.y;view.follow=false;selectCity(ref.tr,0);render();}else if(ref&&ref.id!=null)openLegends('kisi',ref.id);d.remove();};
-  box.appendChild(d);while(box.children.length>4)box.firstChild.remove();setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),500);},settings.reduceMotion?5000:9000);}
+  box.appendChild(d);while(box.children.length>4)box.firstChild.remove();setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),500);},settings.reduceMotion?5000:9000);return true;}
 function maybeToast(ev){if(!sim||sim._booting)return;const t=ev.text;
-  if(ev.pp&&ev.pp.some(id=>watchIds.includes(id))){toast(t,'watch',{id:ev.pp.find(id=>watchIds.includes(id))});return;}
+  if(ev.pp&&ev.pp.some(id=>watchIds.includes(id))){queueToast(t,'watch',{id:ev.pp.find(id=>watchIds.includes(id))});return;}
   if(!evMajor(t))return;const kind=ev.kind==='savaş'?'war':ev.kind==='siyaset'?'pol':ev.kind==='doğa'?'nat':'';
   if(ev.kind==='kültür'||ev.kind==='aile')return;
-  toast(t,kind,{tr:ev.tr&&ev.tr.length?ev.tr[0]:null,id:ev.pp&&ev.pp.length?ev.pp[0]:null});}
+  queueToast(t,kind,{tr:ev.tr&&ev.tr.length?ev.tr[0]:null,id:ev.pp&&ev.pp.length?ev.pp[0]:null});}
+function queueToast(text,kind,ref){if(!UI)return;pendingToasts.push({text,kind,ref});if(pendingToasts.length>24)pendingToasts.shift();}
 function renderYearly(){const el=document.getElementById('yearly');if(!el||!sim)return;const Y=(sim.yearly||[]).slice(0,8);
   if(!Y.length){el.innerHTML='<div class="empty">Yıl sonunda burada özet belirir.</div>';return;}
   el.innerHTML=`<table class="ytab"><thead><tr><th>yıl</th><th title="nüfus">nüfus</th><th title="doğum">+d</th><th title="ölüm">−ö</th><th title="evlilik">♥</th><th title="savaş ilanı">⚔</th><th title="isyan / darbe / yıkılış">⚑</th><th title="tahta çıkış">♛</th><th title="kıtlık / salgın">☠</th></tr></thead><tbody>`+
@@ -1924,7 +2079,8 @@ function renderCityCard(){const el=document.getElementById('cityCard');if(!el)re
    <div style="color:var(--muted);margin-top:6px">ambar · ${Math.round(c.food)} / ${CFG.granaryCap}</div>${bar(c.food/CFG.granaryCap,(c.food/CFG.granaryCap)>0.25?'#b9d95a':'#e0603a')}
    <div style="color:var(--muted)">surlar · ${Math.round(c.hp)} / ${CFG.cityHP}</div>${bar(c.hp/CFG.cityHP,c.hp/CFG.cityHP>0.4?'#8ef0bf':'#ff6b6b')}
    <div style="color:var(--muted)">tarlalar · <b style="color:var(--ink)">${tarla}</b></div>
-   ${typeof openLegends==='function'?`<div style="margin-top:9px"><button onclick="openLegends('kral',${t.id})" style="padding:5px 10px">📜 ${t.name} tarihi</button></div>`:''}`;}
+   ${typeof openLegends==='function'?`<div style="margin-top:9px"><button onclick="openLegends('kral',${t.id})" style="padding:5px 10px">📜 ${t.name} tarihi</button></div>`:''}`;
+  try{if(window.I18N&&I18N.lang!=='tr'&&I18N.localizeSubtree)I18N.localizeSubtree(el);}catch(_){} }
 (function(){const cvv=document.getElementById('world'),tip=document.getElementById('tip'),frame=cvv.parentElement;
   cvv.addEventListener('pointermove',e=>{if(!sim){return;}const p=canvasXY(e),z=view.z;let best=null,bd=Math.pow(Math.max(5,9/z),2);
     for(const a of sim.agents){const d=(a.x-p.x)**2+(a.y-p.y)**2;if(d<bd){bd=d;best=a;}}
@@ -2057,7 +2213,7 @@ function advDeal(){const A=sim.adv,t=sim.tribes[A.tid];A.last=A.last||{};const e
   let tot=0;for(const x of el)tot+=x.w;let r=rng()*tot,pick=el[0].c;for(const x of el){r-=x.w;if(r<=0){pick=x.c;break;}}
   advPush(pick);}
 function advPush(pick){const A=sim.adv,t=sim.tribes[A.tid];(A.last=A.last||{})[pick.id]=sim.tick;A.pending={id:pick.id,at:sim.tick,card:pick,text:pick.text(t)};A.recent.push(pick.id);if(A.recent.length>4)A.recent.shift();
-  if(UI){toast(`🎩 Hükümdar seni çağırıyor: ${pick.title}`,'pol',{tab:'dan'});if(playing){playing=false;const pb=document.getElementById('playBtn');if(pb)pb.textContent='▶';A.pausedForCard=true;}showTab('dan');const side=document.querySelector('.side');if(side)side.scrollTop=0;}}
+  if(UI){toast(`🎩 Hükümdar seni çağırıyor: ${pick.title}`,'pol',{tab:'dan'});if(playing){playing=false;A.pausedForCard=true;}if(inStep)sim._advOpen=true;else{const pb=document.getElementById('playBtn');if(pb)pb.textContent='▶';showTab('dan');const side=document.querySelector('.side');if(side)side.scrollTop=0;}}}
 function advWarAsk(t,o,betray){const A=sim.adv;if(A.pending||sim.tick<(A.askCool||0))return;A.askO=o.id;A.askB=!!betray;A.askCool=sim.tick+8*CFG.yearLen;advPush(CARDS.find(c=>c.id==='hirs'));}
 const advCost=(t,o)=>o.cost?Math.round(o.cost*(1+Math.max(0,t.treasury-200)/400)):0;          // hazine şişince harcamalar da ölçeklenir (zengin krallık pahalı iş yapar)
 const advAfford=(t,o)=>t.treasury>=advCost(t,o)&&(!o.need||o.need(t));
@@ -2076,8 +2232,8 @@ function advResolve(idx){const A=sim.adv;if(!A||!A.pending)return;const t=sim.tr
   A.trust=clamp(A.trust+(adopted?(res.ok?5:-7):(idx==null?-2:-3)),5,100);
   A.log.unshift({chk:sim.tick+5*CFG.yearLen,g0:growthIdx(t)/A.g0,y,title:card.title,choice:o.l,asked:idx!=null?opts[idx].l:null,adopted,ok:res.ok,msg:res.m,trust:A.trust});if(A.log.length>14)A.log.pop();
   const rl=rulerOf(t);logEvent(`🎩 ${ek(t.name,'loc')} ${adopted?'danışmanın tavsiyesiyle':'hükümdar kendi bildiğini yaparak'} "${o.l}": ${res.m}`,t.color,{pp:rl?[rl.id]:[]});
-  A.pending=null;A.nextCard=sim.tick+Math.round(rnd(4,6)*CFG.yearLen);if(A.pausedForCard&&UI&&!playing){playing=true;const pb=document.getElementById('playBtn');if(pb)pb.textContent='❚❚';}A.pausedForCard=false;renderAdvisor();updateStats();}
-function renderAdvisor(){const el=document.getElementById('advBox');const tab=document.querySelector('.tab[data-t=dan]');if(!sim)return;
+  A.pending=null;A.nextCard=sim.tick+Math.round(rnd(4,6)*CFG.yearLen);if(A.pausedForCard&&UI&&!playing){playing=true;}A.pausedForCard=false;UIDIRTY.adv=true;UIDIRTY.stats=true;}
+function renderAdvisor(){if(inStep){UIDIRTY.adv=true;return;}if(!sim)return;UIDIRTY.adv=false;const el=document.getElementById('advBox');const tab=document.querySelector('.tab[data-t=dan]');if(!sim)return;
   if(tab)tab.classList.toggle('badge',!!(sim.adv&&sim.adv.pending&&!sim.adv.ended));if(!el)return;
   const A=sim.adv;
   if(!A){const L=sim.tribes.filter(t=>!t._dead&&t.cities.length).sort((a,b)=>b.pop-a.pop);
@@ -2112,7 +2268,7 @@ function fastForward(years,done){const box=document.getElementById('boot');const
   const tick=()=>{const t0=performance.now();while(sim.tick<target&&!bootSkip&&performance.now()-t0<28)step();
     const y=Math.floor(sim.tick/CFG.yearLen);if(bar)bar.style.width=Math.min(100,sim.tick/target*100)+'%';if(txt)txt.textContent=`Tarih yazılıyor… Yıl ${y} / ${years} · ${sim.agents.length} kişi · ${sim.tribes.filter(t=>!t._dead).length} krallık`;
     if(sim.tick<target&&!bootSkip){setTimeout(tick,0);return;}
-    sim._booting=false;playing=true;if(box)box.style.display='none';computeTerritory();updateStats();renderStories();renderInspect();if(done)done();};
+    sim._booting=false;playing=true;if(box)box.style.display='none';computeTerritory();invalidateOverlay();updateStats();renderStories();renderInspect();flushUI(true);if(done)done();};
   setTimeout(tick,30);}
 /* ---------- İlahi eller: oyuncu müdahalesi (inanç puanı harcar) ---------- */
 let godSel=null;
@@ -2130,7 +2286,7 @@ const GODS=[
    logEvent(`🌋 Tanrı yer sarstı: ${c} şehir hasar gördü, ${k} kişi öldü`,'#ff9b5b');return `${c} şehir hasar gördü, ${k} ölü`;}},
  {id:'veba',ic:'☠',n:'Salgın',cost:50,h:'Bölgedeki krallıkta salgın başlatır',needT:true,fn:(p,t)=>{t._epi={until:sim.tick+Math.round(rnd(0.6,1.2)*CFG.yearLen),mult:rnd(3,5)};logEvent(`☠ Tanrı ${ek(t.name,'dat')} salgın gönderdi`,'#ff9b5b');return `${t.name} salgına yakalandı`;}}];
 const godM=()=>{sim.pow=sim.pow||{m:70};return sim.pow;};
-function godYear(){if(!sim)return;const P=godM();P.m=Math.min(100,P.m+4);renderGods();}
+function godYear(){if(!sim)return;const P=godM();P.m=Math.min(100,P.m+4);UIDIRTY.stats=true;}
 function godPick(id){godSel=godSel===id?null:id;if(typeof cv!=='undefined'&&cv)cv.style.cursor=godSel?'crosshair':'';renderGods();}
 function castGod(id,pt,near){const g=GODS.find(x=>x.id===id),P=godM();if(!g)return;
   if(P.m<g.cost){toast('Yeterli inanç puanın yok','war');godPick(null);return;}
